@@ -1,0 +1,139 @@
+<section class="page-card">
+  <div class="page-card__header">
+    <div>
+      <span>Profissionais</span>
+      <h2>Equipe de atendimento</h2>
+    </div>
+    <div class="header-actions">
+      <strong>{{ total }} registros</strong>
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">Novo profissional</button>
+    </div>
+  </div>
+
+  <form class="toolbar" (ngSubmit)="carregar(0)">
+    <input class="form-control" name="busca" [(ngModel)]="busca" placeholder="Buscar por nome">
+    <select class="form-select toolbar__select" name="filtroTipo" [(ngModel)]="filtroTipo" (change)="carregar(0)">
+      <option value="todos">Todos os tipos</option>
+      @for (tipo of tipos; track tipo.value) {
+        <option [value]="tipo.value">{{ tipo.label }}</option>
+      }
+    </select>
+    <select class="form-select toolbar__status" name="filtroStatus" [(ngModel)]="filtroStatus" (change)="carregar(0)">
+      <option value="ativos">Ativos</option>
+      <option value="inativos">Inativos</option>
+      <option value="todos">Todos</option>
+    </select>
+    <button class="btn btn-primary" type="submit" [disabled]="loading">Buscar</button>
+  </form>
+
+  @if (error) {
+    <div class="alert alert-danger">{{ error }}</div>
+  }
+
+  <div class="table-shell">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th>Cor</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading) {
+          <tr><td colspan="5">Carregando...</td></tr>
+        } @else if (!profissionais.length) {
+          <tr><td colspan="5">Nenhum profissional encontrado.</td></tr>
+        } @else {
+          @for (profissional of profissionais; track profissional.id) {
+            <tr>
+              <td><strong>{{ profissional.nome }}</strong></td>
+              <td>{{ tipoLabel(profissional.tipo) }}</td>
+              <td>
+                <span class="color-chip" [style.background]="profissional.cor || '#d6ded9'"></span>
+                {{ profissional.cor || '-' }}
+              </td>
+              <td>{{ profissional.ativo ? 'Ativo' : 'Inativo' }}</td>
+              <td class="text-end">
+                <div class="row-actions">
+                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirEdicao(profissional)">Editar</button>
+                  @if (profissional.ativo) {
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      [disabled]="desativandoId === profissional.id"
+                      (click)="desativar(profissional)"
+                    >
+                      {{ desativandoId === profissional.id ? 'Desativando...' : 'Desativar' }}
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination-row">
+    <button class="btn btn-outline-secondary" type="button" [disabled]="pagina === 0 || loading" (click)="carregar(pagina - 1)">Anterior</button>
+    <span>Pagina {{ pagina + 1 }}</span>
+    <button class="btn btn-outline-secondary" type="button" [disabled]="profissionais.length < tamanho || loading" (click)="carregar(pagina + 1)">Proxima</button>
+  </div>
+</section>
+
+@if (modalAberto) {
+  <div class="modal-backdrop-custom" (click)="fecharModal()">
+    <section class="entity-modal" (click)="$event.stopPropagation()">
+      <div class="entity-modal__header">
+        <div>
+          <span>Profissional</span>
+          <h3>{{ profissionalEmEdicao ? 'Editar cadastro' : 'Novo cadastro' }}</h3>
+        </div>
+        <button class="btn-close" type="button" aria-label="Fechar" (click)="fecharModal()"></button>
+      </div>
+
+      @if (formError) {
+        <div class="alert alert-danger">{{ formError }}</div>
+      }
+
+      <form class="entity-form" (ngSubmit)="salvar()">
+        <label>
+          Nome
+          <input class="form-control" name="nome" [(ngModel)]="form.nome" required maxlength="150">
+        </label>
+
+        <div class="entity-form__grid">
+          <label>
+            Tipo
+            <select class="form-select" name="tipo" [(ngModel)]="form.tipo" required>
+              @for (tipo of tipos; track tipo.value) {
+                <option [value]="tipo.value">{{ tipo.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Cor da agenda
+            <div class="color-input">
+              <input class="form-control form-control-color" name="cor" [(ngModel)]="form.cor" type="color">
+              <input class="form-control" name="corTexto" [(ngModel)]="form.cor" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$">
+            </div>
+          </label>
+        </div>
+
+        <label class="form-check entity-form__check">
+          <input class="form-check-input" name="ativo" [(ngModel)]="form.ativo" type="checkbox">
+          <span class="form-check-label">Profissional ativo</span>
+        </label>
+
+        <div class="entity-modal__actions">
+          <button class="btn btn-outline-secondary" type="button" [disabled]="salvando" (click)="fecharModal()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

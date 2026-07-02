@@ -1,0 +1,70 @@
+﻿<main class="login-page">
+  <section class="login-hero">
+    <img class="login-hero__logo" src="assets/Fit_Saude_LOGO 1.jpeg" alt="Fit Saude">
+    <span class="login-hero__tag">Sistema administrativo</span>
+    <h1>Gestao da agenda, pacientes e equipe clinica.</h1>
+    <p>Uma rotina mais clara para acompanhar atendimentos, cadastros e unidades em um painel direto.</p>
+  </section>
+
+  <section class="login-card" aria-label="Acesso ao sistema">
+    <div class="login-card__header">
+      <span>{{ modo === 'login' ? 'Entrar' : modo === 'primeiro-acesso' ? 'Primeiro acesso' : 'Recuperar senha' }}</span>
+      <h2>{{ modo === 'login' ? 'Acesso administrativo' : modo === 'primeiro-acesso' ? 'Criar minha senha' : 'Solicitar novo codigo' }}</h2>
+    </div>
+
+    @if (error) {
+      <div class="alert alert-danger">{{ error }}</div>
+    }
+
+    @if (success) {
+      <div class="alert alert-success">{{ success }}</div>
+    }
+
+    @if (modo === 'login') {
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <label class="form-label" for="email">E-mail</label>
+      <input id="email" class="form-control" type="email" formControlName="email" autocomplete="email">
+
+      <label class="form-label" for="senha">Senha</label>
+      <input id="senha" class="form-control" type="password" formControlName="senha" autocomplete="current-password">
+
+      <button class="btn btn-primary w-100" type="submit" [disabled]="loading">
+        {{ loading ? 'Entrando...' : 'Entrar no sistema' }}
+      </button>
+    </form>
+    } @else if (modo === 'primeiro-acesso') {
+    <form [formGroup]="primeiroAcessoForm" (ngSubmit)="definirSenha()">
+      <label class="form-label" for="primeiro-email">E-mail</label>
+      <input id="primeiro-email" class="form-control" type="email" formControlName="email" autocomplete="email">
+
+      <label class="form-label" for="codigo-acesso">Codigo de acesso</label>
+      <input id="codigo-acesso" class="form-control" type="text" formControlName="codigoAcesso" autocomplete="one-time-code">
+
+      <label class="form-label" for="nova-senha">Nova senha</label>
+      <input id="nova-senha" class="form-control" type="password" formControlName="senha" autocomplete="new-password">
+
+      <button class="btn btn-primary w-100" type="submit" [disabled]="loading">
+        {{ loading ? 'Criando...' : 'Criar senha' }}
+      </button>
+    </form>
+    } @else {
+      <div class="recovery-box">
+        <strong>Recuperacao sem e-mail</strong>
+        <p>Peça a outro administrador ativo para abrir a aba Admins e gerar um novo codigo de acesso para o seu usuario.</p>
+        <p>Com o codigo em maos, volte em Primeiro acesso para definir uma nova senha.</p>
+      </div>
+    }
+
+    <div class="login-links">
+      @if (modo !== 'login') {
+        <button type="button" (click)="alterarModo('login')">Voltar para login</button>
+      }
+      @if (modo !== 'primeiro-acesso') {
+        <button type="button" (click)="alterarModo('primeiro-acesso')">Primeiro acesso</button>
+      }
+      @if (modo !== 'recuperar') {
+        <button type="button" (click)="alterarModo('recuperar')">Esqueci a senha</button>
+      }
+    </div>
+  </section>
+</main>

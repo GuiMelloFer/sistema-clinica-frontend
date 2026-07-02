@@ -1,0 +1,136 @@
+﻿.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+  gap: clamp(28px, 5vw, 76px);
+  align-items: center;
+  padding: clamp(24px, 5vw, 72px);
+  background:
+    linear-gradient(135deg, rgba(238, 243, 241, 0.96), rgba(255, 255, 255, 0.92)),
+    #eef3f1;
+}
+
+.login-hero {
+  max-width: 720px;
+  color: #10352f;
+}
+
+.login-hero__logo {
+  width: min(240px, 52vw);
+  height: 104px;
+  display: block;
+  margin-bottom: 30px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.login-hero__tag {
+  display: inline-flex;
+  margin-bottom: 16px;
+  color: #c98b32;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.login-hero h1 {
+  max-width: 680px;
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 4.3rem);
+  font-weight: 800;
+  line-height: 1.03;
+}
+
+.login-hero p {
+  max-width: 560px;
+  margin: 20px 0 0;
+  color: #63746d;
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.login-card {
+  padding: 30px;
+  border: 1px solid #d9e2de;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 22px 54px rgba(18, 53, 47, 0.12);
+}
+
+.login-card__header {
+  margin-bottom: 22px;
+}
+
+.login-card__header h2 {
+  margin: 4px 0 0;
+  color: #10352f;
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.form-label {
+  margin-top: 14px;
+  color: #465852;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.form-control {
+  min-height: 48px;
+}
+
+.btn {
+  min-height: 48px;
+  margin-top: 24px;
+}
+
+.login-links {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.login-links button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #17483f;
+  font-weight: 800;
+}
+
+.recovery-box {
+  padding: 16px;
+  border: 1px solid #d9e2de;
+  border-radius: 8px;
+  background: #f6faf8;
+}
+
+.recovery-box strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #10352f;
+}
+
+.recovery-box p {
+  margin: 0 0 10px;
+  color: #63746d;
+  line-height: 1.5;
+}
+
+.recovery-box p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 860px) {
+  .login-page {
+    grid-template-columns: 1fr;
+    align-content: center;
+  }
+
+  .login-card {
+    max-width: 520px;
+  }
+}

@@ -1,0 +1,160 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+:root {
+  --clinic-green: #17483f;
+  --clinic-green-strong: #10352f;
+  --clinic-green-soft: #2f7668;
+  --clinic-gold: #c98b32;
+  --clinic-surface: #ffffff;
+  --clinic-surface-muted: #f6f8f7;
+  --clinic-page: #eef3f1;
+  --clinic-border: #d9e2de;
+  --clinic-ink: #17231f;
+  --clinic-muted: #63746d;
+  --clinic-shadow: 0 14px 36px rgba(18, 53, 47, 0.08);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--clinic-page);
+  color: var(--clinic-ink);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: 0;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--clinic-green);
+  --bs-btn-border-color: var(--clinic-green);
+  --bs-btn-hover-bg: var(--clinic-green-strong);
+  --bs-btn-hover-border-color: var(--clinic-green-strong);
+  --bs-btn-active-bg: var(--clinic-green-strong);
+  --bs-btn-active-border-color: var(--clinic-green-strong);
+  --bs-btn-disabled-bg: #6f8f86;
+  --bs-btn-disabled-border-color: #6f8f86;
+}
+
+.btn,
+.form-control,
+.form-select {
+  border-radius: 8px;
+}
+
+.btn {
+  font-weight: 700;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--clinic-green);
+  --bs-btn-border-color: #8fb8ae;
+  --bs-btn-hover-bg: var(--clinic-green);
+  --bs-btn-hover-border-color: var(--clinic-green);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: #51625b;
+  --bs-btn-border-color: #c7d2ce;
+  --bs-btn-hover-bg: #eef3f1;
+  --bs-btn-hover-border-color: #b6c4bf;
+  --bs-btn-hover-color: #24352f;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(47, 118, 104, 0.74);
+  box-shadow: 0 0 0 0.2rem rgba(47, 118, 104, 0.14);
+}
+
+.alert {
+  border-radius: 8px;
+}
+
+.page-card,
+.agenda-header,
+.agenda-filters,
+.hero-card,
+.metric-card,
+.appointment {
+  border: 1px solid var(--clinic-border) !important;
+  border-radius: 8px !important;
+  background: var(--clinic-surface) !important;
+  box-shadow: var(--clinic-shadow) !important;
+}
+
+.page-card__header span,
+.agenda-header span,
+.schedule-modal__header span,
+.patient-modal__header span,
+.entity-modal__header span,
+.hero-card span,
+.metric-card small,
+.login-card__header span {
+  color: var(--clinic-gold) !important;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-card__header h2,
+.agenda-header h2,
+.schedule-modal__header h3,
+.patient-modal__header h3,
+.entity-modal__header h3 {
+  color: var(--clinic-green-strong) !important;
+  font-weight: 800;
+}
+
+.table-shell {
+  border-color: var(--clinic-border) !important;
+  border-radius: 8px !important;
+  background: var(--clinic-surface);
+}
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: #f6faf8;
+}
+
+.table th {
+  color: var(--clinic-muted) !important;
+  font-size: 0.74rem !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.table td {
+  color: #32433d;
+}
+
+.modal-backdrop-custom {
+  background: rgba(16, 36, 32, 0.52) !important;
+}
+
+.patient-modal,
+.entity-modal,
+.schedule-modal {
+  border-radius: 8px !important;
+  background: #fff !important;
+}

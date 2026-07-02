@@ -1,0 +1,128 @@
+.admins-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+
+.admins-main,
+.password-card {
+  padding: 24px;
+}
+
+.page-card__header,
+.admin-form,
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-card__header {
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.page-card__header h2 {
+  margin: 2px 0 0;
+}
+
+.access-code {
+  display: grid;
+  grid-template-columns: minmax(170px, 260px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #cfe0db;
+  border-radius: 8px;
+  background: #f6faf8;
+}
+
+.access-code span,
+.access-code small,
+.table td small {
+  display: block;
+}
+
+.access-code span {
+  color: #63746d;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.access-code strong {
+  display: block;
+  color: #10352f;
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.access-code small,
+.table td small {
+  color: #63746d;
+}
+
+.access-code p {
+  margin: 0;
+  color: #465852;
+  line-height: 1.5;
+}
+
+.admin-form {
+  margin-bottom: 14px;
+}
+
+.admin-form .form-control {
+  flex: 1 1 220px;
+  min-height: 46px;
+}
+
+.admin-form .btn {
+  min-height: 46px;
+}
+
+.table-shell {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 760px;
+  margin: 0;
+}
+
+.row-actions {
+  justify-content: flex-end;
+}
+
+.password-form {
+  display: grid;
+  gap: 14px;
+}
+
+.password-form label {
+  display: grid;
+  gap: 6px;
+  color: #53665f;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .admins-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .access-code {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form .btn {
+    width: 100%;
+  }
+}

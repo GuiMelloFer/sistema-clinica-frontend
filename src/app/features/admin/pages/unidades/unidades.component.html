@@ -1,0 +1,115 @@
+<section class="page-card">
+  <div class="page-card__header">
+    <div>
+      <span>Unidades</span>
+      <h2>Locais de atendimento</h2>
+    </div>
+    <div class="header-actions">
+      <strong>{{ total }} registros</strong>
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">Nova unidade</button>
+    </div>
+  </div>
+
+  <form class="toolbar" (ngSubmit)="carregar(0)">
+    <input class="form-control" name="busca" [(ngModel)]="busca" placeholder="Buscar por unidade">
+    <select class="form-select toolbar__status" name="filtroStatus" [(ngModel)]="filtroStatus" (change)="carregar(0)">
+      <option value="ativos">Ativas</option>
+      <option value="inativos">Inativas</option>
+      <option value="todos">Todas</option>
+    </select>
+    <button class="btn btn-primary" type="submit" [disabled]="loading">Buscar</button>
+  </form>
+
+  @if (error) {
+    <div class="alert alert-danger">{{ error }}</div>
+  }
+
+  <div class="table-shell">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Endereco</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading) {
+          <tr><td colspan="4">Carregando...</td></tr>
+        } @else if (!unidades.length) {
+          <tr><td colspan="4">Nenhuma unidade encontrada.</td></tr>
+        } @else {
+          @for (unidade of unidades; track unidade.id) {
+            <tr>
+              <td><strong>{{ unidade.nome }}</strong></td>
+              <td>{{ unidade.endereco || '-' }}</td>
+              <td>{{ unidade.ativo ? 'Ativa' : 'Inativa' }}</td>
+              <td class="text-end">
+                <div class="row-actions">
+                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirEdicao(unidade)">Editar</button>
+                  @if (unidade.ativo) {
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      [disabled]="desativandoId === unidade.id"
+                      (click)="desativar(unidade)"
+                    >
+                      {{ desativandoId === unidade.id ? 'Desativando...' : 'Desativar' }}
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination-row">
+    <button class="btn btn-outline-secondary" type="button" [disabled]="pagina === 0 || loading" (click)="carregar(pagina - 1)">Anterior</button>
+    <span>Pagina {{ pagina + 1 }}</span>
+    <button class="btn btn-outline-secondary" type="button" [disabled]="unidades.length < tamanho || loading" (click)="carregar(pagina + 1)">Proxima</button>
+  </div>
+</section>
+
+@if (modalAberto) {
+  <div class="modal-backdrop-custom" (click)="fecharModal()">
+    <section class="entity-modal" (click)="$event.stopPropagation()">
+      <div class="entity-modal__header">
+        <div>
+          <span>Unidade</span>
+          <h3>{{ unidadeEmEdicao ? 'Editar cadastro' : 'Novo cadastro' }}</h3>
+        </div>
+        <button class="btn-close" type="button" aria-label="Fechar" (click)="fecharModal()"></button>
+      </div>
+
+      @if (formError) {
+        <div class="alert alert-danger">{{ formError }}</div>
+      }
+
+      <form class="entity-form" (ngSubmit)="salvar()">
+        <label>
+          Nome
+          <input class="form-control" name="nome" [(ngModel)]="form.nome" required maxlength="120">
+        </label>
+
+        <label>
+          Endereco
+          <textarea class="form-control" name="endereco" [(ngModel)]="form.endereco" rows="3"></textarea>
+        </label>
+
+        <label class="form-check entity-form__check">
+          <input class="form-check-input" name="ativo" [(ngModel)]="form.ativo" type="checkbox">
+          <span class="form-check-label">Unidade ativa</span>
+        </label>
+
+        <div class="entity-modal__actions">
+          <button class="btn btn-outline-secondary" type="button" [disabled]="salvando" (click)="fecharModal()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

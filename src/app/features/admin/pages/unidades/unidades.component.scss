@@ -1,0 +1,152 @@
+.page-card {
+  padding: 24px;
+  border: 1px solid rgba(23, 59, 52, 0.12);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 18px 50px rgba(23, 59, 52, 0.08);
+}
+
+.page-card__header,
+.toolbar,
+.pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.page-card__header {
+  margin-bottom: 20px;
+}
+
+.page-card__header span,
+.entity-modal__header span {
+  color: #a26f32;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-card__header h2,
+.entity-modal__header h3 {
+  margin: 2px 0 0;
+  color: #173b34;
+  font-weight: 900;
+}
+
+.header-actions,
+.row-actions,
+.entity-modal__header,
+.entity-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.header-actions,
+.row-actions,
+.entity-modal__actions {
+  justify-content: flex-end;
+}
+
+.toolbar {
+  margin-bottom: 18px;
+}
+
+.toolbar .form-control {
+  flex: 1 1 280px;
+  min-height: 46px;
+  border-radius: 14px;
+}
+
+.toolbar__status {
+  flex: 0 0 140px;
+  min-height: 46px;
+  border-radius: 14px;
+}
+
+.table-shell {
+  overflow-x: auto;
+  border: 1px solid #e4ded2;
+  border-radius: 18px;
+}
+
+.table {
+  min-width: 720px;
+  margin: 0;
+}
+
+.table th {
+  color: #53665f;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
+.pagination-row {
+  margin-top: 18px;
+}
+
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 36, 32, 0.48);
+}
+
+.entity-modal {
+  width: min(640px, 100%);
+  max-height: min(88vh, 820px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid rgba(23, 59, 52, 0.14);
+  border-radius: 18px;
+  background: #fffdf8;
+  box-shadow: 0 28px 70px rgba(16, 36, 32, 0.28);
+}
+
+.entity-modal__header {
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.entity-modal__header span {
+  font-size: 0.78rem;
+}
+
+.entity-form {
+  display: grid;
+  gap: 14px;
+}
+
+.entity-form label {
+  display: grid;
+  gap: 6px;
+  color: #53665f;
+  font-weight: 800;
+}
+
+.entity-form__check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.entity-form__check .form-check-input {
+  margin: 0;
+}
+
+.entity-modal__actions {
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .toolbar__status,
+  .toolbar .btn {
+    width: 100%;
+  }
+}

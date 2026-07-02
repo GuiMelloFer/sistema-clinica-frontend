@@ -1,0 +1,378 @@
+# Contexto do Projeto - Sistema ClinicaFit Frontend
+
+Este arquivo existe para orientar outro Codex/agente que abrir este repositorio sem o historico da conversa.
+
+## Repositorios
+
+Backend:
+
+```text
+C:\dev\sistema-clinica-backend
+```
+
+Frontend:
+
+```text
+C:\dev\sistema-clinica-frontend
+```
+
+## Objetivo do Produto
+
+Sistema interno para a ClinicaFit com:
+
+- Login unico administrativo.
+- Cadastro/listagem de pacientes.
+- Importacao de pacientes via Excel exportado do Access.
+- Ficha de paciente imprimivel.
+- Agenda de consultas e neuromodulacao.
+- Regras de agenda com aviso e confirmacao, nunca bloqueio absoluto.
+
+## Estado do Backend
+
+Backend Spring Boot esta funcional e foi fechado para iniciar o frontend.
+
+Stack backend:
+
+- Java 21
+- Spring Boot 4
+- PostgreSQL
+- Flyway
+- JWT
+
+URL local esperada:
+
+```text
+http://localhost:8080
+```
+
+CORS ja libera:
+
+```text
+http://localhost:4200
+http://localhost:5173
+```
+
+Login local esperado:
+
+```text
+email: guimello113@gmail.com
+senha: 123456
+```
+
+Endpoints principais:
+
+```http
+POST /auth/login
+GET  /health
+```
+
+Pacientes:
+
+```http
+GET    /pacientes?busca=&ativo=&page=0&size=20&sort=nome
+GET    /pacientes/{id}
+GET    /pacientes/{id}/ficha
+POST   /pacientes
+PUT    /pacientes/{id}
+DELETE /pacientes/{id}
+POST   /pacientes/importar
+```
+
+Profissionais:
+
+```http
+GET    /profissionais?busca=&ativo=&tipo=&page=0&size=20&sort=nome
+GET    /profissionais/{id}
+POST   /profissionais
+PUT    /profissionais/{id}
+DELETE /profissionais/{id}
+```
+
+Unidades:
+
+```http
+GET    /unidades?busca=&ativo=&page=0&size=20&sort=nome
+GET    /unidades/{id}
+POST   /unidades
+PUT    /unidades/{id}
+DELETE /unidades/{id}
+```
+
+Agenda:
+
+```http
+GET    /agendamentos?inicio=2026-06-09T00:00:00&fim=2026-06-10T00:00:00
+GET    /agendamentos/{id}
+POST   /agendamentos
+PUT    /agendamentos/{id}
+DELETE /agendamentos/{id}
+```
+
+## Contratos Importantes do Backend
+
+Resposta de login:
+
+```ts
+interface LoginResponse {
+  token: string;
+  tipo: string;
+  expiraEm: string;
+  nome: string;
+  email: string;
+}
+```
+
+Listagens paginadas retornam:
+
+```ts
+interface PaginaResponse<T> {
+  conteudo: T[];
+  pagina: number;
+  tamanho: number;
+  totalElementos: number;
+  totalPaginas: number;
+  primeira: boolean;
+  ultima: boolean;
+}
+```
+
+Paciente:
+
+```ts
+interface Paciente {
+  id: number;
+  numeroPaciente: string | null;
+  nome: string;
+  dataNascimento: string | null;
+  cpf: string | null;
+  telefone: string | null;
+  celular: string | null;
+  email: string | null;
+  endereco: string | null;
+  observacao: string | null;
+  ativo: boolean;
+  criadoEm: string;
+  atualizadoEm: string | null;
+}
+```
+
+Agendamento:
+
+```ts
+type TipoAgendamento = 'CONSULTA' | 'NEUROMODULACAO';
+type StatusAgendamento = 'AGENDADO' | 'CONFIRMADO' | 'COMPARECEU' | 'FALTOU' | 'CANCELADO' | 'REMARCADO';
+
+interface Agendamento {
+  id: string;
+  pacienteId: number;
+  pacienteNome: string;
+  profissionalId: string;
+  profissionalNome: string;
+  profissionalCor: string | null;
+  unidadeId: string;
+  unidadeNome: string;
+  tipo: TipoAgendamento;
+  titulo: string | null;
+  dataHoraInicio: string;
+  dataHoraFim: string;
+  status: StatusAgendamento;
+  observacao: string | null;
+  avisos: string[];
+  criadoEm: string;
+  atualizadoEm: string | null;
+}
+```
+
+## Regra Critica da Agenda
+
+O usuario reforcou que nada deve ser extremamente proibido em agendamentos.
+
+Regra esperada:
+
+- Se atingir uma regra/conflito, o sistema deve avisar.
+- O usuario deve conseguir confirmar.
+- Tecnicamente deve ser possivel agendar mesmo acima da regra.
+
+Backend implementado:
+
+- Se houver conflito e `confirmarConflito` nao for `true`, retorna HTTP `409` com aviso.
+- Para salvar mesmo assim, reenviar o mesmo payload com `confirmarConflito: true`.
+- Neuromodulacao acima de 2 no mesmo horario/profissional/unidade segue o mesmo fluxo.
+
+## Importacao de Pacientes
+
+O usuario ainda ira realizar o import antes ou durante o inicio do frontend.
+
+Arquivo Excel original informado:
+
+```text
+C:\Users\guilherme.ferreira\Downloads\Acess_no_excel_gabriel_eh_foda.xlsx
+```
+
+No backend ha script:
+
+```text
+C:\dev\sistema-clinica-backend\scripts\importar-pacientes.ps1
+```
+
+Comando:
+
+```powershell
+cd C:\dev\sistema-clinica-backend
+.\scripts\importar-pacientes.ps1 -Arquivo "C:\Users\guilherme.ferreira\Downloads\Acess_no_excel_gabriel_eh_foda.xlsx"
+```
+
+Regras do import:
+
+- Coluna `Codigo`/`C?digo` do Excel vira `pacientes.id` no banco.
+- Esse mesmo codigo tambem vira `numeroPaciente`.
+- Campo `Celular` recebe nono digito quando vier DDD + 8 digitos.
+- Campo `Telefone` apenas normaliza; nao adiciona nono digito.
+- Telefones concatenados podem ser separados.
+
+## Estado Atual do Frontend
+
+Projeto Angular criado em:
+
+```text
+C:\dev\sistema-clinica-frontend
+```
+
+Stack frontend:
+
+- Angular 17
+- Standalone components
+- SCSS
+- Bootstrap 5
+- SSR habilitado
+- Estrutura baseada em `C:\dev\torneio-estacoes-frontend`
+
+Estrutura criada:
+
+```text
+src/app/core
+src/app/core/guards
+src/app/core/interceptors
+src/app/core/models
+src/app/core/services
+src/app/core/utils
+src/app/features/auth/pages/login
+src/app/features/admin/pages/dashboard
+src/app/features/admin/pages/pacientes
+src/app/features/admin/pages/agenda
+src/app/layout/admin-layout
+src/environments
+```
+
+Arquivos importantes:
+
+```text
+src/app/app.routes.ts
+src/app/app.config.ts
+src/app/core/interceptors/auth-token.interceptor.ts
+src/app/core/guards/auth.guard.ts
+src/app/core/services/auth.service.ts
+src/app/core/services/token-storage.service.ts
+src/app/core/services/paciente.service.ts
+src/app/core/services/agendamento.service.ts
+src/environments/environment.ts
+src/environments/environment.production.ts
+```
+
+Rotas atuais:
+
+```text
+/login
+/dashboard
+/pacientes
+/agenda
+/profissionais -> placeholder usando AgendaComponent
+/unidades -> placeholder usando AgendaComponent
+```
+
+O que ja funciona no front:
+
+- Build Angular.
+- Login chama `POST /auth/login`.
+- Token fica em `localStorage`.
+- Interceptor envia `Authorization: Bearer <token>`.
+- Guard protege layout administrativo.
+- Tela `/pacientes` chama `GET /pacientes` e lista registros.
+- Link de ficha abre `http://localhost:8080/pacientes/{id}/ficha` em nova aba.
+
+## Comandos do Frontend
+
+Instalar dependencias, se necessario:
+
+```powershell
+npm install
+```
+
+Rodar local:
+
+```powershell
+npm start
+```
+
+URL:
+
+```text
+http://localhost:4200
+```
+
+Build:
+
+```powershell
+npm run build
+```
+
+Ultima validacao feita:
+
+```text
+npm run build: sucesso
+```
+
+Warning conhecido:
+
+- Angular CLI avisa que Node 24.13.0 nao e suportado oficialmente.
+- Se houver erro estranho, usar Node 20 LTS.
+- Build tambem mostra warning de CSS do Bootstrap: `.form-floating>~label`; nao bloqueia.
+
+## Proximos Passos Recomendados
+
+1. Criar CRUD visual de pacientes:
+   - novo paciente
+   - editar paciente
+   - desativar paciente
+   - detalhes/ficha
+
+2. Criar telas de profissionais e unidades:
+   - listagem
+   - cadastro/edicao
+   - ativo/inativo
+
+3. Evoluir agenda:
+   - visual semanal/diario
+   - formulario de agendamento
+   - busca de paciente/profissional/unidade
+   - ao receber `409`, mostrar modal de confirmacao
+   - se confirmar, reenviar payload com `confirmarConflito: true`
+
+4. Depois do import dos pacientes:
+   - validar busca por nome/telefone/celular
+   - validar ficha imprimivel
+   - ajustar visual da listagem para volume real de dados
+
+## Direcao Visual
+
+Nao seguir visual generico do Angular.
+
+Direcao inicial usada:
+
+- Fundo creme/verde clinico.
+- Verde escuro `#173b34`.
+- Dourado `#d99a3e`.
+- Tipografia Google Fonts: `Manrope` + `Fraunces`.
+- Layout administrativo lateral semelhante em estrutura ao Torneio das Estacoes, mas com identidade propria de clinica.
+
+Preservar essa direcao ao evoluir as telas.

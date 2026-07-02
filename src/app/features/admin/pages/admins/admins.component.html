@@ -1,0 +1,124 @@
+<section class="admins-grid">
+  <div class="page-card admins-main">
+    <div class="page-card__header">
+      <div>
+        <span>Admins</span>
+        <h2>Acessos administrativos</h2>
+      </div>
+      <button class="btn btn-outline-secondary" type="button" [disabled]="loading" (click)="carregar()">Atualizar</button>
+    </div>
+
+    @if (error) {
+      <div class="alert alert-danger">{{ error }}</div>
+    }
+
+    @if (codigoGerado) {
+      <div class="access-code">
+        <div>
+          <span>Codigo de acesso</span>
+          <strong>{{ codigoGerado.codigoAcesso }}</strong>
+          <small>{{ codigoGerado.nome }} - {{ codigoGerado.email }}</small>
+        </div>
+        <p>Entregue este codigo manualmente. Ele permite criar ou redefinir a senha ate {{ codigoGerado.expiraEm | date:'dd/MM/yyyy HH:mm' }}.</p>
+      </div>
+    }
+
+    <form class="admin-form" (ngSubmit)="criarAdmin()">
+      <input class="form-control" name="nome" [(ngModel)]="novoAdmin.nome" placeholder="Nome do admin" maxlength="150">
+      <input class="form-control" name="email" [(ngModel)]="novoAdmin.email" placeholder="E-mail" type="email" maxlength="180">
+      <button class="btn btn-primary" type="submit" [disabled]="salvandoAdmin">{{ salvandoAdmin ? 'Criando...' : 'Adicionar admin' }}</button>
+    </form>
+
+    @if (adminError) {
+      <div class="alert alert-danger">{{ adminError }}</div>
+    }
+
+    <div class="table-shell">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Admin</th>
+            <th>Status</th>
+            <th>Senha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            <tr><td colspan="4">Carregando...</td></tr>
+          } @else if (!admins.length) {
+            <tr><td colspan="4">Nenhum admin cadastrado.</td></tr>
+          } @else {
+            @for (admin of admins; track admin.id) {
+              <tr>
+                <td>
+                  <strong>{{ admin.nome }}</strong>
+                  <small>{{ admin.email }}</small>
+                </td>
+                <td>{{ admin.ativo ? 'Ativo' : 'Removido' }}</td>
+                <td>
+                  @if (admin.senhaDefinida) {
+                    Definida
+                  } @else {
+                    Primeiro acesso pendente
+                  }
+                </td>
+                <td class="text-end">
+                  <div class="row-actions">
+                    @if (admin.ativo) {
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        type="button"
+                        [disabled]="gerandoCodigoId === admin.id"
+                        (click)="gerarCodigo(admin)"
+                      >
+                        {{ gerandoCodigoId === admin.id ? 'Gerando...' : 'Gerar codigo' }}
+                      </button>
+                      <button
+                        class="btn btn-sm btn-outline-danger"
+                        type="button"
+                        [disabled]="adminAtual(admin) || removendoId === admin.id"
+                        (click)="remover(admin)"
+                      >
+                        {{ removendoId === admin.id ? 'Removendo...' : 'Remover' }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <aside class="page-card password-card">
+    <div class="page-card__header">
+      <div>
+        <span>Conta</span>
+        <h2>Alterar minha senha</h2>
+      </div>
+    </div>
+
+    @if (senhaError) {
+      <div class="alert alert-danger">{{ senhaError }}</div>
+    }
+
+    @if (senhaSuccess) {
+      <div class="alert alert-success">{{ senhaSuccess }}</div>
+    }
+
+    <form class="password-form" (ngSubmit)="alterarSenha()">
+      <label>
+        Senha atual
+        <input class="form-control" name="senhaAtual" [(ngModel)]="senhaForm.senhaAtual" type="password" autocomplete="current-password">
+      </label>
+      <label>
+        Nova senha
+        <input class="form-control" name="novaSenha" [(ngModel)]="senhaForm.novaSenha" type="password" autocomplete="new-password">
+      </label>
+      <button class="btn btn-primary" type="submit" [disabled]="salvandoSenha">{{ salvandoSenha ? 'Salvando...' : 'Salvar senha' }}</button>
+    </form>
+  </aside>
+</section>

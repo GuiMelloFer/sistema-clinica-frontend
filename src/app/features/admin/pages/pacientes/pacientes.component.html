@@ -1,0 +1,199 @@
+<section class="page-card">
+  <div class="page-card__header">
+    <div>
+      <span>Pacientes</span>
+      <h2>Cadastro importado do Access</h2>
+    </div>
+    <div class="header-actions">
+      <strong>{{ total }} registros</strong>
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">Novo paciente</button>
+    </div>
+  </div>
+
+  <form class="toolbar" (ngSubmit)="carregar(0)">
+    <input
+      class="form-control"
+      name="busca"
+      [(ngModel)]="busca"
+      placeholder="Buscar por nome, CPF ou telefone"
+      (ngModelChange)="buscarEnquantoDigita()"
+    >
+    <select class="form-select toolbar__status" name="filtroStatus" [(ngModel)]="filtroStatus" (change)="carregar(0)">
+      <option value="ativos">Ativos</option>
+      <option value="inativos">Inativos</option>
+      <option value="todos">Todos</option>
+    </select>
+    <div class="toolbar__actions">
+      <input
+        #arquivoPacientes
+        class="visually-hidden"
+        type="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        (change)="importarArquivo($event)"
+      >
+      <button
+        class="btn btn-outline-primary"
+        type="button"
+        [disabled]="importando"
+        (click)="arquivoPacientes.click()"
+      >
+        {{ importando ? 'Importando...' : 'Importar Excel' }}
+      </button>
+    </div>
+  </form>
+
+  @if (error) {
+    <div class="alert alert-danger">{{ error }}</div>
+  }
+
+  @if (importacao) {
+    <div class="alert alert-success import-summary">
+      <strong>Importacao concluida.</strong>
+      <span>{{ importacao.totalLinhas }} linhas, {{ importacao.criados }} criados, {{ importacao.atualizados }} atualizados, {{ importacao.ignorados }} ignorados.</span>
+      @if (importacao.erros.length) {
+        <details>
+          <summary>Ver erros</summary>
+          <ul>
+            @for (erro of importacao.erros; track erro) {
+              <li>{{ erro }}</li>
+            }
+          </ul>
+        </details>
+      }
+    </div>
+  }
+
+  <div class="table-shell">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Codigo</th>
+          <th>Nome</th>
+          <th>Nascimento</th>
+          <th>Telefone</th>
+          <th>Celular</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading) {
+          <tr><td colspan="6">Carregando...</td></tr>
+        } @else if (!pacientes.length) {
+          <tr><td colspan="6">Nenhum paciente encontrado.</td></tr>
+        } @else {
+          @for (paciente of pacientes; track paciente.id) {
+            <tr>
+              <td>{{ paciente.id }}</td>
+              <td><strong>{{ paciente.nome }}</strong></td>
+              <td>{{ paciente.dataNascimento | date:'dd/MM/yyyy' }}</td>
+              <td>{{ paciente.telefone || '-' }}</td>
+              <td>{{ paciente.celular || '-' }}</td>
+              <td class="text-end">
+                <div class="row-actions">
+                  <a class="btn btn-sm btn-outline-secondary" [href]="fichaUrl(paciente)" target="_blank">Ficha</a>
+                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirEdicao(paciente)">Editar</button>
+                  @if (paciente.ativo) {
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      [disabled]="desativandoId === paciente.id"
+                      (click)="desativar(paciente)"
+                    >
+                      {{ desativandoId === paciente.id ? 'Desativando...' : 'Desativar' }}
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination-row">
+    <button class="btn btn-outline-secondary" type="button" [disabled]="pagina === 0 || loading" (click)="carregar(pagina - 1)">Anterior</button>
+    <span>Pagina {{ pagina + 1 }}</span>
+    <button class="btn btn-outline-secondary" type="button" [disabled]="pacientes.length < tamanho || loading" (click)="carregar(pagina + 1)">Proxima</button>
+  </div>
+</section>
+
+@if (modalAberto) {
+  <div class="modal-backdrop-custom" (click)="fecharModal()">
+    <section class="patient-modal" (click)="$event.stopPropagation()">
+      <div class="patient-modal__header">
+        <div>
+          <span>Paciente</span>
+          <h3>{{ pacienteEmEdicao ? 'Editar cadastro' : 'Novo cadastro' }}</h3>
+        </div>
+        <button class="btn-close" type="button" aria-label="Fechar" (click)="fecharModal()"></button>
+      </div>
+
+      @if (formError) {
+        <div class="alert alert-danger">{{ formError }}</div>
+      }
+
+      <form class="patient-form" (ngSubmit)="salvar()">
+        <label>
+          Nome
+          <input class="form-control" name="nome" [(ngModel)]="form.nome" required maxlength="180">
+        </label>
+
+        <div class="patient-form__grid">
+          @if (pacienteEmEdicao) {
+            <label>
+              Codigo
+              <input class="form-control" name="numeroPaciente" [(ngModel)]="form.numeroPaciente" maxlength="50">
+            </label>
+          }
+          <label>
+            Nascimento
+            <input class="form-control" name="dataNascimento" [(ngModel)]="form.dataNascimento" type="date">
+          </label>
+        </div>
+
+        <div class="patient-form__grid">
+          <label>
+            CPF
+            <input class="form-control" name="cpf" [(ngModel)]="form.cpf" maxlength="20">
+          </label>
+          <label>
+            E-mail
+            <input class="form-control" name="email" [(ngModel)]="form.email" type="email" maxlength="180">
+          </label>
+        </div>
+
+        <div class="patient-form__grid">
+          <label>
+            Telefone
+            <input class="form-control" name="telefone" [(ngModel)]="form.telefone" maxlength="30">
+          </label>
+          <label>
+            Celular
+            <input class="form-control" name="celular" [(ngModel)]="form.celular" maxlength="30">
+          </label>
+        </div>
+
+        <label>
+          Endereco
+          <textarea class="form-control" name="endereco" [(ngModel)]="form.endereco" rows="2"></textarea>
+        </label>
+
+        <label>
+          Observacao
+          <textarea class="form-control" name="observacao" [(ngModel)]="form.observacao" rows="3"></textarea>
+        </label>
+
+        <label class="form-check patient-form__check">
+          <input class="form-check-input" name="ativo" [(ngModel)]="form.ativo" type="checkbox">
+          <span class="form-check-label">Paciente ativo</span>
+        </label>
+
+        <div class="patient-modal__actions">
+          <button class="btn btn-outline-secondary" type="button" [disabled]="salvando" (click)="fecharModal()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

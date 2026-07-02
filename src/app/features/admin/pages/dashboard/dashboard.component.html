@@ -1,0 +1,17 @@
+<section class="dashboard-grid">
+  <article class="hero-card">
+    <span>Proximo passo</span>
+    <h2>Validar pacientes importados e iniciar telas operacionais.</h2>
+    <p>Esta base ja autentica no backend e esta preparada para consumir os endpoints principais.</p>
+    <a class="btn btn-primary" routerLink="/pacientes">Ver pacientes</a>
+  </article>
+
+  <div class="metric-list">
+    @for (card of cards; track card.label) {
+      <a class="metric-card" [routerLink]="card.path">
+        <small>{{ card.label }}</small>
+        <strong>{{ card.value }}</strong>
+      </a>
+    }
+  </div>
+</section>

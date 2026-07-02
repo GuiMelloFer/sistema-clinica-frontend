@@ -1,0 +1,289 @@
+﻿<section class="agenda-page">
+  <div class="agenda-header">
+    <div>
+      <span>Agenda semanal</span>
+      <h2>{{ semanaLabel() }}</h2>
+    </div>
+
+    <div class="agenda-header__actions">
+      <div class="week-switcher" aria-label="Navegacao da semana">
+        <button class="btn btn-outline-secondary" type="button" (click)="irParaSemanaAnterior()">Anterior</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="irParaHoje()">Hoje</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="irParaProximaSemana()">Proxima</button>
+      </div>
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">Novo agendamento</button>
+    </div>
+  </div>
+
+  <form class="agenda-filters" (ngSubmit)="carregarAgenda()">
+    <label>
+      Semana de referencia
+      <input class="form-control" name="data" [(ngModel)]="data" type="date" (change)="carregarAgenda()">
+    </label>
+    <label>
+      Profissional
+      <select class="form-select" name="filtroProfissional" [(ngModel)]="filtroProfissional" (change)="carregarAgenda()">
+        <option value="">Todos</option>
+        @for (profissional of profissionais; track profissional.id) {
+          <option [value]="profissional.id">{{ profissional.nome }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Unidade
+      <select class="form-select" name="filtroUnidade" [(ngModel)]="filtroUnidade" (change)="carregarAgenda()">
+        <option value="">Todas</option>
+        @for (unidade of unidades; track unidade.id) {
+          <option [value]="unidade.id">{{ unidade.nome }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Tipo
+      <select class="form-select" name="filtroTipo" [(ngModel)]="filtroTipo" (change)="carregarAgenda()">
+        <option value="">Todos</option>
+        @for (tipo of tipos; track tipo.value) {
+          <option [value]="tipo.value">{{ tipo.label }}</option>
+        }
+      </select>
+    </label>
+    <button class="btn btn-outline-primary" type="submit" [disabled]="loading">Atualizar</button>
+  </form>
+
+  @if (error) {
+    <div class="alert alert-danger">{{ error }}</div>
+  }
+
+  <section class="calendar-shell" [class.is-loading]="loading" aria-label="Agenda da semana">
+    <div class="calendar-head">
+      <div class="calendar-head__corner">Horario</div>
+      @for (dia of diasDaSemana; track dia.data) {
+        <button
+          class="calendar-day-head"
+          type="button"
+          [class.is-today]="dia.hoje"
+          [class.is-selected]="dia.selecionado"
+          (click)="selecionarDia(dia.data)"
+        >
+          <span>{{ dia.rotulo }}</span>
+          <strong>{{ dia.diaMes }}</strong>
+          <small>{{ contagemDia(dia.data) }} ag.</small>
+        </button>
+      }
+    </div>
+
+    <div class="calendar-body">
+      <div class="calendar-times" [style.height.px]="gridAltura()">
+        @for (row of calendarHourRows; track row.hora) {
+          <div class="calendar-time" [style.height.px]="row.height">{{ row.hora.toString().padStart(2, '0') }}:00</div>
+        }
+      </div>
+
+      <div class="calendar-grid" [style.height.px]="gridAltura()">
+        @for (dia of diasDaSemana; track dia.data) {
+          <div class="calendar-day-column" [class.is-selected]="dia.selecionado">
+            @for (row of calendarHourRows; track row.hora) {
+              <button
+                class="calendar-slot"
+                type="button"
+                [style.height.px]="row.height"
+                (dblclick)="abrirNovo(dia.data, row.hora)"
+                aria-label="Novo agendamento"
+              ></button>
+            }
+
+            @if (indicadorAgoraTop(dia.data); as agoraTop) {
+              <div class="calendar-now" [style.top.px]="agoraTop" aria-label="Horario atual"></div>
+            }
+            @for (item of eventosDoDia(dia.data); track item.agendamento.id) {
+              <article
+                class="calendar-event"
+                [class.is-cancelled]="item.agendamento.status === 'CANCELADO'"
+                [class.is-confirmed]="item.agendamento.status === 'CONFIRMADO'"
+                [class.is-done]="item.agendamento.status === 'COMPARECEU'"
+                [class.is-missed]="item.agendamento.status === 'FALTOU'"
+                [class.is-compact]="item.height <= 44"
+                [style.top.px]="item.top"
+                [style.height.px]="item.height"
+                [style.left.%]="item.left"
+                [style.width.%]="item.width"
+                [style.--event-color]="item.agendamento.profissionalCor || '#2f7668'"
+                (click)="abrirEdicao(item.agendamento)"
+              >
+                <div class="calendar-event__time">
+                  <span>{{ item.agendamento.dataHoraInicio | date:'HH:mm' }} - {{ item.agendamento.dataHoraFim | date:'HH:mm' }}</span>
+                  <small>{{ statusLabel(item.agendamento.status) }}</small>
+                </div>
+                <strong>{{ item.agendamento.pacienteNome }}</strong>
+                <span>{{ tipoLabel(item.agendamento.tipo) }} · {{ item.agendamento.profissionalNome }}</span>
+              </article>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (loading) {
+      <div class="calendar-loading">Carregando agenda...</div>
+    } @else if (!agendamentos.length) {
+      <div class="calendar-empty">Nenhum agendamento nesta semana para os filtros selecionados.</div>
+    }
+  </section>
+</section>
+
+@if (modalAberto) {
+  <div class="modal-backdrop-custom" (click)="fecharModal()">
+    <section class="schedule-modal" (click)="$event.stopPropagation()">
+      <div class="schedule-modal__header">
+        <div>
+          <span>Agendamento</span>
+          <h3>{{ agendamentoEmEdicao ? 'Editar horario' : 'Novo horario' }}</h3>
+        </div>
+        <button class="btn-close" type="button" aria-label="Fechar" (click)="fecharModal()"></button>
+      </div>
+
+      @if (formError) {
+        <div class="alert alert-danger">{{ formError }}</div>
+      }
+
+      <form class="schedule-form" (ngSubmit)="salvar()">
+        <div class="patient-combobox">
+          <label>
+            Paciente
+            <input
+              class="form-control"
+              name="pacienteBusca"
+              [(ngModel)]="pacienteBusca"
+              placeholder="Digite codigo, nome, CPF ou telefone"
+              (ngModelChange)="buscarPacientesEnquantoDigita()"
+              (focus)="mostrarOpcoesPaciente = true"
+              (blur)="esconderOpcoesPaciente()"
+              autocomplete="off"
+            >
+          </label>
+          @if (buscandoPacientes) {
+            <span class="search-status">Buscando...</span>
+          }
+          @if (mostrarOpcoesPaciente && pacienteBusca.trim()) {
+            <div class="patient-options">
+              @if (pacientes.length) {
+                @for (paciente of pacientes; track paciente.id) {
+                  <button type="button" (mousedown)="selecionarPaciente(paciente)">
+                    <strong>{{ paciente.nome }}</strong>
+                    <span>{{ formatarPacienteOpcao(paciente) }}</span>
+                  </button>
+                }
+              } @else if (!buscandoPacientes) {
+                <div class="patient-options__empty">Nenhum paciente encontrado.</div>
+              }
+            </div>
+          }
+          @if (!form.pacienteId && pacienteBusca.trim()) {
+            <small class="patient-hint">Selecione uma opcao da lista.</small>
+          }
+          @if (form.pacienteId) {
+            <small class="patient-hint">Paciente selecionado.</small>
+          }
+        </div>
+
+        <div class="schedule-form__grid">
+          <label>
+            Profissional
+            <select class="form-select" name="profissionalId" [(ngModel)]="form.profissionalId" required>
+              <option [ngValue]="null">Selecione</option>
+              @for (profissional of profissionais; track profissional.id) {
+                <option [ngValue]="profissional.id">{{ profissional.nome }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Unidade
+            <select class="form-select" name="unidadeId" [(ngModel)]="form.unidadeId" required>
+              <option [ngValue]="null">Selecione</option>
+              @for (unidade of unidades; track unidade.id) {
+                <option [ngValue]="unidade.id">{{ unidade.nome }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="schedule-form__grid">
+          <label>
+            Tipo
+            <select class="form-select" name="tipo" [(ngModel)]="form.tipo" (ngModelChange)="alterarTipo($event)" required>
+              @for (tipo of tipos; track tipo.value) {
+                <option [value]="tipo.value">{{ tipo.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Status
+            <select class="form-select" name="status" [(ngModel)]="form.status">
+              @for (status of statusOptions; track status.value) {
+                <option [value]="status.value">{{ status.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="schedule-time-panel">
+          <div class="schedule-time-panel__header">
+            <span>Horario</span>
+            <strong>{{ duracaoAtualLabel() }}</strong>
+          </div>
+
+          <div class="schedule-form__grid schedule-form__grid--time">
+            <label>
+              Data
+              <input class="form-control" name="dataAgendamento" [(ngModel)]="dataAgendamento" type="date" (change)="alterarDataAgendamento()" required>
+            </label>
+            <label>
+              Inicio
+              <select class="form-select" name="horarioInicio" [(ngModel)]="horarioInicio" (change)="alterarHorarioInicio()" required>
+                @for (horario of horarios; track horario) {
+                  <option [value]="horario">{{ horario }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Fim
+              <select class="form-select" name="horarioFim" [(ngModel)]="horarioFim" (change)="alterarHorarioFim()" required>
+                @for (horario of horarios; track horario) {
+                  <option [value]="horario">{{ horario }}</option>
+                }
+              </select>
+              @if (fimDataLabel()) {
+                <small>{{ fimDataLabel() }}</small>
+              }
+            </label>
+          </div>
+        </div>
+
+        <label>
+          Titulo
+          <input class="form-control" name="titulo" [(ngModel)]="form.titulo" maxlength="180">
+        </label>
+
+        <label>
+          Observacao
+          <textarea class="form-control" name="observacao" [(ngModel)]="form.observacao" rows="3"></textarea>
+        </label>
+
+        <div class="schedule-modal__actions">
+          <button class="btn btn-outline-secondary" type="button" [disabled]="salvando" (click)="fecharModal()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,38 @@
+﻿<div class="admin-shell">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/dashboard" aria-label="ClinicaFit - dashboard">
+      <span class="brand__mark">
+        <img src="assets/Fit_Saude_LOGO 1.jpeg" alt="ClinicaFit">
+      </span>
+      <span class="brand__text">
+        <strong>Fit Saude</strong>
+        <small>gestao clinica</small>
+      </span>
+    </a>
+
+    <nav class="sidebar__nav" aria-label="Menu principal">
+      @for (item of menu; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="is-active">{{ item.label }}</a>
+      }
+    </nav>
+
+    <button class="sidebar__logout" type="button" (click)="logout()">Sair</button>
+  </aside>
+
+  <main class="content-shell">
+    <header class="topbar">
+      <div>
+        <span class="topbar__eyebrow">Sistema Fit Saude</span>
+        <h1>Operacao da clinica</h1>
+      </div>
+      <div class="topbar__user">
+        <span>{{ tokenStorage.user?.nome || 'Usuario' }}</span>
+        <small>{{ tokenStorage.user?.email }}</small>
+      </div>
+    </header>
+
+    <section class="page-host">
+      <router-outlet />
+    </section>
+  </main>
+</div>
