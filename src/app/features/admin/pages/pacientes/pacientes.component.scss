@@ -108,7 +108,7 @@
 .modal-backdrop-custom {
   position: fixed;
   inset: 0;
-  z-index: 1040;
+  z-index: 2000;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -168,16 +168,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-}
-
-.patient-form__check {
-  display: flex !important;
-  align-items: center;
-  gap: 8px !important;
-}
-
-.patient-form__check .form-check-input {
-  margin: 0;
 }
 
 .patient-modal__actions {

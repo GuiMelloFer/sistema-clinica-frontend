@@ -104,19 +104,20 @@ export class PacientesComponent implements OnInit, OnDestroy {
       nome: paciente.nome,
       dataNascimento: paciente.dataNascimento,
       cpf: paciente.cpf,
+      rg: paciente.rg,
       telefone: paciente.telefone,
       celular: paciente.celular,
       email: paciente.email,
       endereco: paciente.endereco,
+      cep: paciente.cep,
       observacao: paciente.observacao,
-      ativo: paciente.ativo,
     };
     this.formError = null;
     this.modalAberto = true;
   }
 
   fecharModal(): void {
-    if (this.salvando) {
+    if (this.salvando || this.desativandoId !== null) {
       return;
     }
 
@@ -149,19 +150,31 @@ export class PacientesComponent implements OnInit, OnDestroy {
       });
   }
 
-  desativar(paciente: Paciente): void {
+  desativarPacienteEmEdicao(): void {
+    if (!this.pacienteEmEdicao) {
+      return;
+    }
+
+    this.desativar(this.pacienteEmEdicao);
+  }
+
+  private desativar(paciente: Paciente): void {
     if (!confirm(`Desativar ${paciente.nome}?`)) {
       return;
     }
 
     this.desativandoId = paciente.id;
     this.error = null;
+    this.formError = null;
 
     this.pacienteService.desativar(paciente.id)
       .pipe(finalize(() => this.desativandoId = null))
       .subscribe({
-        next: () => this.carregar(this.pagina),
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: () => {
+          this.modalAberto = false;
+          this.carregar(this.pagina);
+        },
+        error: (error) => this.formError = getHttpErrorMessage(error),
       });
   }
 
@@ -202,6 +215,26 @@ export class PacientesComponent implements OnInit, OnDestroy {
     return url.toString();
   }
 
+  aplicarMascaraCpf(valor: string | null | undefined): void {
+    this.form.cpf = this.formatarCpf(valor);
+  }
+
+  aplicarMascaraRg(valor: string | null | undefined): void {
+    this.form.rg = this.formatarRg(valor);
+  }
+
+  aplicarMascaraCep(valor: string | null | undefined): void {
+    this.form.cep = this.formatarCep(valor);
+  }
+
+  aplicarMascaraTelefone(campo: 'telefone' | 'celular', valor: string | null | undefined): void {
+    this.form[campo] = this.formatarTelefone(valor);
+  }
+
+  normalizarEmail(): void {
+    this.form.email = this.limparTexto(this.form.email)?.toLowerCase() ?? null;
+  }
+
   private ativoSelecionado(): boolean | null {
     if (this.filtroStatus === 'ativos') {
       return true;
@@ -220,12 +253,13 @@ export class PacientesComponent implements OnInit, OnDestroy {
       nome: '',
       dataNascimento: null,
       cpf: null,
+      rg: null,
       telefone: null,
       celular: null,
       email: null,
       endereco: null,
+      cep: null,
       observacao: null,
-      ativo: true,
     };
   }
 
@@ -234,18 +268,108 @@ export class PacientesComponent implements OnInit, OnDestroy {
       numeroPaciente: this.limparTexto(form.numeroPaciente),
       nome: form.nome.trim(),
       dataNascimento: this.limparTexto(form.dataNascimento),
-      cpf: this.limparTexto(form.cpf),
-      telefone: this.limparTexto(form.telefone),
-      celular: this.limparTexto(form.celular),
-      email: this.limparTexto(form.email),
+      cpf: this.limparTexto(this.formatarCpf(form.cpf)),
+      rg: this.limparTexto(this.formatarRg(form.rg)),
+      telefone: this.limparTexto(this.formatarTelefone(form.telefone)),
+      celular: this.limparTexto(this.formatarTelefone(form.celular)),
+      email: this.limparTexto(form.email)?.toLowerCase() ?? null,
       endereco: this.limparTexto(form.endereco),
+      cep: this.limparTexto(this.formatarCep(form.cep, true)),
       observacao: this.limparTexto(form.observacao),
-      ativo: form.ativo ?? true,
+      ativo: true,
     };
   }
 
   private limparTexto(valor: string | null | undefined): string | null {
     const texto = valor?.trim();
     return texto ? texto : null;
+  }
+
+  private formatarCpf(valor: string | null | undefined): string | null {
+    const digitos = this.digitos(valor).slice(0, 11);
+    if (!digitos) {
+      return null;
+    }
+
+    if (digitos.length <= 3) {
+      return digitos;
+    }
+
+    if (digitos.length <= 6) {
+      return `${digitos.slice(0, 3)}.${digitos.slice(3)}`;
+    }
+
+    if (digitos.length <= 9) {
+      return `${digitos.slice(0, 3)}.${digitos.slice(3, 6)}.${digitos.slice(6)}`;
+    }
+
+    return `${digitos.slice(0, 3)}.${digitos.slice(3, 6)}.${digitos.slice(6, 9)}-${digitos.slice(9)}`;
+  }
+
+  private formatarCep(valor: string | null | undefined, completarZeroEsquerda = false): string | null {
+    let digitos = this.digitos(valor).slice(0, 8);
+    if (!digitos) {
+      return null;
+    }
+
+    if (completarZeroEsquerda && digitos.length === 7) {
+      digitos = `0${digitos}`;
+    }
+
+    if (digitos.length <= 5) {
+      return digitos;
+    }
+
+    return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+  }
+
+  private formatarRg(valor: string | null | undefined): string | null {
+    const caracteres = (valor ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 9);
+    if (!caracteres) {
+      return null;
+    }
+
+    if (caracteres.length <= 2) {
+      return caracteres;
+    }
+
+    if (caracteres.length === 8) {
+      return `${caracteres.slice(0, 1)}.${caracteres.slice(1, 4)}.${caracteres.slice(4, 7)}-${caracteres.slice(7)}`;
+    }
+
+    if (caracteres.length <= 5) {
+      return `${caracteres.slice(0, 2)}.${caracteres.slice(2)}`;
+    }
+
+    if (caracteres.length <= 8) {
+      return `${caracteres.slice(0, 2)}.${caracteres.slice(2, 5)}.${caracteres.slice(5)}`;
+    }
+
+    return `${caracteres.slice(0, 2)}.${caracteres.slice(2, 5)}.${caracteres.slice(5, 8)}-${caracteres.slice(8)}`;
+  }
+
+  private formatarTelefone(valor: string | null | undefined): string | null {
+    const digitos = this.digitos(valor).slice(0, 11);
+    if (!digitos) {
+      return null;
+    }
+
+    if (digitos.length <= 2) {
+      return digitos;
+    }
+
+    if (digitos.length <= 6) {
+      return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+    }
+
+    if (digitos.length <= 10) {
+      return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+    }
+
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
+  }
+
+  private digitos(valor: string | null | undefined): string {
+    return (valor ?? '').replace(/\D/g, '');
   }
 }

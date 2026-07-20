@@ -4,10 +4,12 @@ export interface Paciente {
   nome: string;
   dataNascimento: string | null;
   cpf: string | null;
+  rg: string | null;
   telefone: string | null;
   celular: string | null;
   email: string | null;
   endereco: string | null;
+  cep: string | null;
   observacao: string | null;
   ativo: boolean;
   criadoEm: string;
@@ -19,10 +21,12 @@ export interface PacienteRequest {
   nome: string;
   dataNascimento?: string | null;
   cpf?: string | null;
+  rg?: string | null;
   telefone?: string | null;
   celular?: string | null;
   email?: string | null;
   endereco?: string | null;
+  cep?: string | null;
   observacao?: string | null;
   ativo?: boolean | null;
 }

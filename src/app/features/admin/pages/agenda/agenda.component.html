@@ -1,15 +1,19 @@
 ﻿<section class="agenda-page">
   <div class="agenda-header">
     <div>
-      <span>Agenda semanal</span>
-      <h2>{{ semanaLabel() }}</h2>
+      <span>{{ modoVisualizacao === 'dia' ? 'Agenda diaria' : 'Agenda semanal' }}</span>
+      <h2>{{ periodoLabel() }}</h2>
     </div>
 
     <div class="agenda-header__actions">
-      <div class="week-switcher" aria-label="Navegacao da semana">
-        <button class="btn btn-outline-secondary" type="button" (click)="irParaSemanaAnterior()">Anterior</button>
+      <div class="view-switcher" aria-label="Modo de visualizacao">
+        <button class="btn btn-outline-secondary" type="button" [class.active]="modoVisualizacao === 'semana'" (click)="alterarModoVisualizacao('semana')">Semana</button>
+        <button class="btn btn-outline-secondary" type="button" [class.active]="modoVisualizacao === 'dia'" (click)="alterarModoVisualizacao('dia')">Dia</button>
+      </div>
+      <div class="week-switcher" [attr.aria-label]="modoVisualizacao === 'dia' ? 'Navegacao do dia' : 'Navegacao da semana'">
+        <button class="btn btn-outline-secondary" type="button" (click)="irParaPeriodoAnterior()">Anterior</button>
         <button class="btn btn-outline-secondary" type="button" (click)="irParaHoje()">Hoje</button>
-        <button class="btn btn-outline-secondary" type="button" (click)="irParaProximaSemana()">Proxima</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="irParaProximoPeriodo()">Proxima</button>
       </div>
       <button class="btn btn-primary" type="button" (click)="abrirNovo()">Novo agendamento</button>
     </div>
@@ -17,7 +21,7 @@
 
   <form class="agenda-filters" (ngSubmit)="carregarAgenda()">
     <label>
-      Semana de referencia
+      {{ modoVisualizacao === 'dia' ? 'Dia de referencia' : 'Semana de referencia' }}
       <input class="form-control" name="data" [(ngModel)]="data" type="date" (change)="carregarAgenda()">
     </label>
     <label>
@@ -54,7 +58,7 @@
     <div class="alert alert-danger">{{ error }}</div>
   }
 
-  <section class="calendar-shell" [class.is-loading]="loading" aria-label="Agenda da semana">
+  <section class="calendar-shell" [class.is-loading]="loading" [class.is-day-view]="modoVisualizacao === 'dia'" [attr.aria-label]="modoVisualizacao === 'dia' ? 'Agenda do dia' : 'Agenda da semana'">
     <div class="calendar-head">
       <div class="calendar-head__corner">Horario</div>
       @for (dia of diasDaSemana; track dia.data) {
@@ -98,6 +102,7 @@
             @for (item of eventosDoDia(dia.data); track item.agendamento.id) {
               <article
                 class="calendar-event"
+                tabindex="0"
                 [class.is-cancelled]="item.agendamento.status === 'CANCELADO'"
                 [class.is-confirmed]="item.agendamento.status === 'CONFIRMADO'"
                 [class.is-done]="item.agendamento.status === 'COMPARECEU'"
@@ -116,6 +121,54 @@
                 </div>
                 <strong>{{ item.agendamento.pacienteNome }}</strong>
                 <span>{{ tipoLabel(item.agendamento.tipo) }} · {{ item.agendamento.profissionalNome }}</span>
+                <div class="calendar-event__popover" aria-hidden="true">
+                  <div class="event-popover__header">
+                    <span>{{ tipoLabel(item.agendamento.tipo) }}</span>
+                    <strong>{{ statusLabel(item.agendamento.status) }}</strong>
+                  </div>
+                  <div class="event-popover__title">{{ item.agendamento.pacienteNome }}</div>
+                  <dl>
+                    <div>
+                      <dt>Paciente</dt>
+                      <dd>#{{ item.agendamento.pacienteId }} · {{ item.agendamento.pacienteNome }}</dd>
+                    </div>
+                    <div>
+                      <dt>Horário</dt>
+                      <dd>
+                        {{ item.agendamento.dataHoraInicio | date:'dd/MM/yyyy HH:mm' }}
+                        -
+                        {{ item.agendamento.dataHoraFim | date:'HH:mm' }}
+                        ({{ duracaoAgendamentoLabel(item.agendamento) }})
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Profissional</dt>
+                      <dd>{{ item.agendamento.profissionalNome }}</dd>
+                    </div>
+                    <div>
+                      <dt>Unidade</dt>
+                      <dd>{{ item.agendamento.unidadeNome }}</dd>
+                    </div>
+                    @if (item.agendamento.titulo) {
+                      <div>
+                        <dt>Título</dt>
+                        <dd>{{ item.agendamento.titulo }}</dd>
+                      </div>
+                    }
+                    @if (item.agendamento.observacao) {
+                      <div>
+                        <dt>Observação</dt>
+                        <dd>{{ item.agendamento.observacao }}</dd>
+                      </div>
+                    }
+                    @if (item.agendamento.avisos.length) {
+                      <div>
+                        <dt>Avisos</dt>
+                        <dd>{{ item.agendamento.avisos.join(' · ') }}</dd>
+                      </div>
+                    }
+                  </dl>
+                </div>
               </article>
             }
           </div>
@@ -126,7 +179,7 @@
     @if (loading) {
       <div class="calendar-loading">Carregando agenda...</div>
     } @else if (!agendamentos.length) {
-      <div class="calendar-empty">Nenhum agendamento nesta semana para os filtros selecionados.</div>
+      <div class="calendar-empty">Nenhum agendamento {{ modoVisualizacao === 'dia' ? 'neste dia' : 'nesta semana' }} para os filtros selecionados.</div>
     }
   </section>
 </section>

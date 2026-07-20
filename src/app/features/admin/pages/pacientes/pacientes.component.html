@@ -15,7 +15,7 @@
       class="form-control"
       name="busca"
       [(ngModel)]="busca"
-      placeholder="Buscar por nome, CPF ou telefone"
+      placeholder="Buscar por nome, CPF, RG ou telefone"
       (ngModelChange)="buscarEnquantoDigita()"
     >
     <select class="form-select toolbar__status" name="filtroStatus" [(ngModel)]="filtroStatus" (change)="carregar(0)">
@@ -67,9 +67,10 @@
     <table class="table align-middle">
       <thead>
         <tr>
-          <th>Codigo</th>
+          <th>#</th>
           <th>Nome</th>
           <th>Nascimento</th>
+          <th>CPF</th>
           <th>Telefone</th>
           <th>Celular</th>
           <th></th>
@@ -77,31 +78,22 @@
       </thead>
       <tbody>
         @if (loading) {
-          <tr><td colspan="6">Carregando...</td></tr>
+          <tr><td colspan="7">Carregando...</td></tr>
         } @else if (!pacientes.length) {
-          <tr><td colspan="6">Nenhum paciente encontrado.</td></tr>
+          <tr><td colspan="7">Nenhum paciente encontrado.</td></tr>
         } @else {
           @for (paciente of pacientes; track paciente.id) {
             <tr>
               <td>{{ paciente.id }}</td>
               <td><strong>{{ paciente.nome }}</strong></td>
               <td>{{ paciente.dataNascimento | date:'dd/MM/yyyy' }}</td>
+              <td>{{ paciente.cpf || '-' }}</td>
               <td>{{ paciente.telefone || '-' }}</td>
               <td>{{ paciente.celular || '-' }}</td>
               <td class="text-end">
                 <div class="row-actions">
                   <a class="btn btn-sm btn-outline-secondary" [href]="fichaUrl(paciente)" target="_blank">Ficha</a>
                   <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirEdicao(paciente)">Editar</button>
-                  @if (paciente.ativo) {
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      type="button"
-                      [disabled]="desativandoId === paciente.id"
-                      (click)="desativar(paciente)"
-                    >
-                      {{ desativandoId === paciente.id ? 'Desativando...' : 'Desativar' }}
-                    </button>
-                  }
                 </div>
               </td>
             </tr>
@@ -155,24 +147,89 @@
         <div class="patient-form__grid">
           <label>
             CPF
-            <input class="form-control" name="cpf" [(ngModel)]="form.cpf" maxlength="20">
+            <input
+              class="form-control"
+              name="cpf"
+              [(ngModel)]="form.cpf"
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="14"
+              placeholder="000.000.000-00"
+              (ngModelChange)="aplicarMascaraCpf($event)"
+            >
           </label>
           <label>
+            RG
+            <input
+              class="form-control"
+              name="rg"
+              [(ngModel)]="form.rg"
+              autocomplete="off"
+              maxlength="12"
+              placeholder="00.000.000-0"
+              (ngModelChange)="aplicarMascaraRg($event)"
+            >
+          </label>
+        </div>
+
+        <div class="patient-form__grid">
+          <label>
             E-mail
-            <input class="form-control" name="email" [(ngModel)]="form.email" type="email" maxlength="180">
+            <input
+              class="form-control"
+              name="email"
+              [(ngModel)]="form.email"
+              type="email"
+              maxlength="180"
+              autocomplete="email"
+              placeholder="paciente@email.com"
+              (blur)="normalizarEmail()"
+            >
           </label>
         </div>
 
         <div class="patient-form__grid">
           <label>
             Telefone
-            <input class="form-control" name="telefone" [(ngModel)]="form.telefone" maxlength="30">
+            <input
+              class="form-control"
+              name="telefone"
+              [(ngModel)]="form.telefone"
+              inputmode="tel"
+              autocomplete="tel"
+              maxlength="15"
+              placeholder="(00) 0000-0000"
+              (ngModelChange)="aplicarMascaraTelefone('telefone', $event)"
+            >
           </label>
           <label>
             Celular
-            <input class="form-control" name="celular" [(ngModel)]="form.celular" maxlength="30">
+            <input
+              class="form-control"
+              name="celular"
+              [(ngModel)]="form.celular"
+              inputmode="tel"
+              autocomplete="tel"
+              maxlength="15"
+              placeholder="(00) 00000-0000"
+              (ngModelChange)="aplicarMascaraTelefone('celular', $event)"
+            >
           </label>
         </div>
+
+        <label>
+          CEP
+          <input
+            class="form-control"
+            name="cep"
+            [(ngModel)]="form.cep"
+            inputmode="numeric"
+            autocomplete="postal-code"
+            maxlength="9"
+            placeholder="00000-000"
+            (ngModelChange)="aplicarMascaraCep($event)"
+          >
+        </label>
 
         <label>
           Endereco
@@ -184,14 +241,19 @@
           <textarea class="form-control" name="observacao" [(ngModel)]="form.observacao" rows="3"></textarea>
         </label>
 
-        <label class="form-check patient-form__check">
-          <input class="form-check-input" name="ativo" [(ngModel)]="form.ativo" type="checkbox">
-          <span class="form-check-label">Paciente ativo</span>
-        </label>
-
         <div class="patient-modal__actions">
-          <button class="btn btn-outline-secondary" type="button" [disabled]="salvando" (click)="fecharModal()">Cancelar</button>
-          <button class="btn btn-primary" type="submit" [disabled]="salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+          @if (pacienteEmEdicao?.ativo) {
+            <button
+              class="btn btn-outline-danger me-auto"
+              type="button"
+              [disabled]="salvando || desativandoId === pacienteEmEdicao?.id"
+              (click)="desativarPacienteEmEdicao()"
+            >
+              {{ desativandoId === pacienteEmEdicao?.id ? 'Desativando...' : 'Desativar paciente' }}
+            </button>
+          }
+          <button class="btn btn-outline-secondary" type="button" [disabled]="salvando || desativandoId !== null" (click)="fecharModal()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="salvando || desativandoId !== null">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
         </div>
       </form>
     </section>

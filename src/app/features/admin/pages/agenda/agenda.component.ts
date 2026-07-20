@@ -43,6 +43,8 @@ interface AgendaCalendarItem {
   width: number;
 }
 
+type ModoVisualizacaoAgenda = 'semana' | 'dia';
+
 @Component({
   selector: 'app-agenda',
   standalone: true,
@@ -93,6 +95,7 @@ export class AgendaComponent implements OnInit, OnDestroy {
   filtroProfissional = '';
   filtroUnidade = '';
   filtroTipo: TipoAgendamento | '' = '';
+  modoVisualizacao: ModoVisualizacaoAgenda = 'semana';
   loading = false;
   loadingBase = false;
   buscandoPacientes = false;
@@ -195,8 +198,10 @@ export class AgendaComponent implements OnInit, OnDestroy {
     this.error = null;
     this.atualizarEstruturaSemana();
 
-    const inicio = this.inicioDaSemana(this.criarDataLocal(this.data));
-    const fim = this.somarDias(inicio, 6);
+    const inicio = this.modoVisualizacao === 'dia'
+      ? this.criarDataLocal(this.data)
+      : this.inicioDaSemana(this.criarDataLocal(this.data));
+    const fim = this.modoVisualizacao === 'dia' ? inicio : this.somarDias(inicio, 6);
 
     this.agendamentoService.listar(
       `${this.formatarDataInput(inicio)}T00:00:00`,
@@ -217,13 +222,15 @@ export class AgendaComponent implements OnInit, OnDestroy {
       });
   }
 
-  irParaSemanaAnterior(): void {
-    this.data = this.formatarDataInput(this.somarDias(this.criarDataLocal(this.data), -7));
+  irParaPeriodoAnterior(): void {
+    const dias = this.modoVisualizacao === 'dia' ? -1 : -7;
+    this.data = this.formatarDataInput(this.somarDias(this.criarDataLocal(this.data), dias));
     this.carregarAgenda();
   }
 
-  irParaProximaSemana(): void {
-    this.data = this.formatarDataInput(this.somarDias(this.criarDataLocal(this.data), 7));
+  irParaProximoPeriodo(): void {
+    const dias = this.modoVisualizacao === 'dia' ? 1 : 7;
+    this.data = this.formatarDataInput(this.somarDias(this.criarDataLocal(this.data), dias));
     this.carregarAgenda();
   }
 
@@ -234,7 +241,17 @@ export class AgendaComponent implements OnInit, OnDestroy {
 
   selecionarDia(data: string): void {
     this.data = data;
+    if (this.modoVisualizacao === 'dia') {
+      this.carregarAgenda();
+      return;
+    }
+
     this.atualizarEstruturaSemana();
+  }
+
+  alterarModoVisualizacao(modo: ModoVisualizacaoAgenda): void {
+    this.modoVisualizacao = modo;
+    this.carregarAgenda();
   }
 
   abrirNovo(dataReferencia = this.data, hora = 9): void {
@@ -349,9 +366,14 @@ export class AgendaComponent implements OnInit, OnDestroy {
     return this.statusOptions.find((item) => item.value === status)?.label ?? status;
   }
 
-  semanaLabel(): string {
+  periodoLabel(): string {
     if (!this.diasDaSemana.length) {
       return '';
+    }
+
+    if (this.modoVisualizacao === 'dia') {
+      const dia = this.diasDaSemana[0];
+      return `${dia.rotulo}, ${this.formatarDataCurta(dia.data)}`;
     }
 
     const inicio = this.diasDaSemana[0].data;
@@ -373,6 +395,21 @@ export class AgendaComponent implements OnInit, OnDestroy {
 
   duracaoAtualLabel(): string {
     return this.form.tipo === 'NEUROMODULACAO' ? '15 min' : '1 hora';
+  }
+
+  duracaoAgendamentoLabel(agendamento: Agendamento): string {
+    const inicio = this.criarDataHora(agendamento.dataHoraInicio);
+    const fim = this.criarDataHora(agendamento.dataHoraFim);
+    const minutos = Math.max(0, Math.round((fim.getTime() - inicio.getTime()) / 60000));
+
+    if (minutos < 60) {
+      return `${minutos} min`;
+    }
+
+    const horas = Math.floor(minutos / 60);
+    const minutosRestantes = minutos % 60;
+
+    return minutosRestantes ? `${horas}h ${minutosRestantes}min` : `${horas}h`;
   }
 
   fimDataLabel(): string | null {
@@ -419,10 +456,13 @@ export class AgendaComponent implements OnInit, OnDestroy {
     }, 30000);
   }
   private atualizarEstruturaSemana(): void {
-    const inicio = this.inicioDaSemana(this.criarDataLocal(this.data));
+    const inicio = this.modoVisualizacao === 'dia'
+      ? this.criarDataLocal(this.data)
+      : this.inicioDaSemana(this.criarDataLocal(this.data));
     const hoje = this.hoje();
+    const quantidadeDias = this.modoVisualizacao === 'dia' ? 1 : 7;
 
-    this.diasDaSemana = Array.from({ length: 7 }, (_, index) => {
+    this.diasDaSemana = Array.from({ length: quantidadeDias }, (_, index) => {
       const dia = this.somarDias(inicio, index);
       const data = this.formatarDataInput(dia);
 
@@ -441,11 +481,11 @@ export class AgendaComponent implements OnInit, OnDestroy {
   }
 
   private criarHorasVisiveis(): number[] {
-    const inicioPadrao = 7;
-    const fimPadrao = 20;
+    const inicioPadrao = 8;
+    const fimPadrao = 15;
     const horasEventos = this.agendamentos.flatMap((agendamento) => [
       this.extrairHora(agendamento.dataHoraInicio),
-      this.extrairHora(agendamento.dataHoraFim),
+      this.horaFinalVisivel(agendamento.dataHoraFim),
     ]);
     const menorHora = horasEventos.length ? Math.min(inicioPadrao, ...horasEventos) : inicioPadrao;
     const maiorHora = horasEventos.length ? Math.max(fimPadrao, ...horasEventos) : fimPadrao;
@@ -694,10 +734,12 @@ export class AgendaComponent implements OnInit, OnDestroy {
           nome: agendamento.pacienteNome,
           dataNascimento: null,
           cpf: null,
+          rg: null,
           telefone: null,
           celular: null,
           email: null,
           endereco: null,
+          cep: null,
           observacao: null,
           ativo: true,
           criadoEm: '',
@@ -764,6 +806,12 @@ export class AgendaComponent implements OnInit, OnDestroy {
 
   private extrairHora(valor: string): number {
     return this.criarDataHora(valor).getHours();
+  }
+
+  private horaFinalVisivel(valor: string): number {
+    const data = this.criarDataHora(valor);
+    const hora = data.getHours();
+    return data.getMinutes() === 0 ? Math.max(0, hora - 1) : hora;
   }
 
   private minutosDoDia(data: Date): number {
