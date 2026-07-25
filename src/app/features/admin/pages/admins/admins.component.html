@@ -116,7 +116,7 @@
       </label>
       <label>
         Nova senha
-        <input class="form-control" name="novaSenha" [(ngModel)]="senhaForm.novaSenha" type="password" autocomplete="new-password">
+        <input class="form-control" name="novaSenha" [(ngModel)]="senhaForm.novaSenha" type="password" autocomplete="new-password" minlength="12" maxlength="72">
       </label>
       <button class="btn btn-primary" type="submit" [disabled]="salvandoSenha">{{ salvandoSenha ? 'Salvando...' : 'Salvar senha' }}</button>
     </form>

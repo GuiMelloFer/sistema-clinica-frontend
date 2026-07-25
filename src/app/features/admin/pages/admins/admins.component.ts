@@ -122,8 +122,8 @@ export class AdminsComponent implements OnInit {
       return;
     }
 
-    if (this.senhaForm.novaSenha.length < 6) {
-      this.senhaError = 'A nova senha deve ter pelo menos 6 caracteres.';
+    if (this.senhaForm.novaSenha.length < 12) {
+      this.senhaError = 'A nova senha deve ter pelo menos 12 caracteres.';
       return;
     }
 

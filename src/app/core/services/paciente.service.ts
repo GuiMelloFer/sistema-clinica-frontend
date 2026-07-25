@@ -45,4 +45,10 @@ export class PacienteService {
 
     return this.http.post<ImportacaoPacientesResponse>(`${this.apiUrl}/pacientes/importar`, formData);
   }
+
+  ficha(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/pacientes/${id}/ficha`, {
+      responseType: 'blob',
+    });
+  }
 }

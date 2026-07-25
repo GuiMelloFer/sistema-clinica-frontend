@@ -92,7 +92,14 @@
               <td>{{ paciente.celular || '-' }}</td>
               <td class="text-end">
                 <div class="row-actions">
-                  <a class="btn btn-sm btn-outline-secondary" [href]="fichaUrl(paciente)" target="_blank">Ficha</a>
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    [disabled]="baixandoFichaId === paciente.id"
+                    (click)="abrirFicha(paciente)"
+                  >
+                    {{ baixandoFichaId === paciente.id ? 'Abrindo...' : 'Ficha' }}
+                  </button>
                   <button class="btn btn-sm btn-outline-primary" type="button" (click)="abrirEdicao(paciente)">Editar</button>
                 </div>
               </td>
@@ -246,10 +253,10 @@
             <button
               class="btn btn-outline-danger me-auto"
               type="button"
-              [disabled]="salvando || desativandoId === pacienteEmEdicao?.id"
+              [disabled]="salvando || desativandoId === pacienteEmEdicao.id"
               (click)="desativarPacienteEmEdicao()"
             >
-              {{ desativandoId === pacienteEmEdicao?.id ? 'Desativando...' : 'Desativar paciente' }}
+              {{ desativandoId === pacienteEmEdicao.id ? 'Desativando...' : 'Desativar paciente' }}
             </button>
           }
           <button class="btn btn-outline-secondary" type="button" [disabled]="salvando || desativandoId !== null" (click)="fecharModal()">Cancelar</button>

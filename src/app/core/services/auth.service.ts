@@ -30,6 +30,12 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return Boolean(this.tokenStorage.token);
+    const token = this.tokenStorage.token;
+    const user = this.tokenStorage.user;
+    if (!token || !user || new Date(user.expiraEm).getTime() <= Date.now()) {
+      this.tokenStorage.clear();
+      return false;
+    }
+    return true;
   }
 }

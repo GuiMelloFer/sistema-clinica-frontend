@@ -11,7 +11,7 @@ export class TokenStorageService {
       return null;
     }
 
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   }
 
   get user(): LoginResponse | null {
@@ -19,8 +19,16 @@ export class TokenStorageService {
       return null;
     }
 
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) as LoginResponse : null;
+    const raw = sessionStorage.getItem(USER_KEY);
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw) as LoginResponse;
+    } catch {
+      this.clear();
+      return null;
+    }
   }
 
   save(login: LoginResponse): void {
@@ -28,8 +36,10 @@ export class TokenStorageService {
       return;
     }
 
-    localStorage.setItem(TOKEN_KEY, login.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(login));
+    sessionStorage.setItem(TOKEN_KEY, login.token);
+    sessionStorage.setItem(USER_KEY, JSON.stringify(login));
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }
 
   clear(): void {
@@ -37,11 +47,13 @@ export class TokenStorageService {
       return;
     }
 
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   }
 
   private hasStorage(): boolean {
-    return typeof localStorage !== 'undefined';
+    return typeof sessionStorage !== 'undefined';
   }
 }

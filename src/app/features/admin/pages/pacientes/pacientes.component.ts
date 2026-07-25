@@ -4,9 +4,7 @@ import { DatePipe } from '@angular/common';
 import { Subject, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs';
 import { ImportacaoPacientesResponse, Paciente, PacienteRequest } from '../../../../core/models/paciente.model';
 import { PacienteService } from '../../../../core/services/paciente.service';
-import { TokenStorageService } from '../../../../core/services/token-storage.service';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
-import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-pacientes',
@@ -17,7 +15,6 @@ import { environment } from '../../../../../environments/environment';
 })
 export class PacientesComponent implements OnInit, OnDestroy {
   private readonly pacienteService = inject(PacienteService);
-  private readonly tokenStorage = inject(TokenStorageService);
   private readonly buscaSubject = new Subject<string>();
   private readonly destroy$ = new Subject<void>();
 
@@ -31,6 +28,7 @@ export class PacientesComponent implements OnInit, OnDestroy {
   importando = false;
   salvando = false;
   desativandoId: number | null = null;
+  baixandoFichaId: number | null = null;
   error: string | null = null;
   formError: string | null = null;
   importacao: ImportacaoPacientesResponse | null = null;
@@ -204,15 +202,31 @@ export class PacientesComponent implements OnInit, OnDestroy {
       });
   }
 
-  fichaUrl(paciente: Paciente): string {
-    const token = this.tokenStorage.token;
-    const url = new URL(`${environment.apiUrl}/pacientes/${paciente.id}/ficha`);
-
-    if (token) {
-      url.searchParams.set('token', token);
+  abrirFicha(paciente: Paciente): void {
+    const novaJanela = window.open('about:blank', '_blank');
+    if (!novaJanela) {
+      this.error = 'O navegador bloqueou a abertura da ficha. Libere pop-ups para este site.';
+      return;
     }
 
-    return url.toString();
+    novaJanela.opener = null;
+    this.baixandoFichaId = paciente.id;
+    this.error = null;
+
+    this.pacienteService.ficha(paciente.id)
+      .pipe(finalize(() => this.baixandoFichaId = null))
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          novaJanela.addEventListener('load', () => novaJanela.print(), { once: true });
+          novaJanela.location.href = url;
+          window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        },
+        error: (error) => {
+          novaJanela.close();
+          this.error = getHttpErrorMessage(error);
+        },
+      });
   }
 
   aplicarMascaraCpf(valor: string | null | undefined): void {

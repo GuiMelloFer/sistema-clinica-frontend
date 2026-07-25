@@ -41,7 +41,7 @@
       <input id="codigo-acesso" class="form-control" type="text" formControlName="codigoAcesso" autocomplete="one-time-code">
 
       <label class="form-label" for="nova-senha">Nova senha</label>
-      <input id="nova-senha" class="form-control" type="password" formControlName="senha" autocomplete="new-password">
+      <input id="nova-senha" class="form-control" type="password" formControlName="senha" autocomplete="new-password" minlength="12" maxlength="72">
 
       <button class="btn btn-primary w-100" type="submit" [disabled]="loading">
         {{ loading ? 'Criando...' : 'Criar senha' }}

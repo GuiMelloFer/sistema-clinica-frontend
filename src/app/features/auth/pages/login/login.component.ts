@@ -23,14 +23,14 @@ export class LoginComponent {
   success: string | null = null;
 
   readonly form = this.fb.nonNullable.group({
-    email: ['guimello113@gmail.com', [Validators.required, Validators.email]],
-    senha: ['123456', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    senha: ['', [Validators.required]],
   });
 
   readonly primeiroAcessoForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     codigoAcesso: ['', [Validators.required]],
-    senha: ['', [Validators.required, Validators.minLength(6)]],
+    senha: ['', [Validators.required, Validators.minLength(12)]],
   });
 
   submit(): void {
