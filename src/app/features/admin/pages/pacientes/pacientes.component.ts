@@ -1,8 +1,20 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
-import { Subject, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs';
+import {
+  EMPTY,
+  Subject,
+  TimeoutError,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  finalize,
+  switchMap,
+  takeUntil,
+  timeout,
+} from 'rxjs';
 import { ImportacaoPacientesResponse, Paciente, PacienteRequest } from '../../../../core/models/paciente.model';
+import { PaginaResponse } from '../../../../core/models/pagina.model';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
 
@@ -15,6 +27,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
 })
 export class PacientesComponent implements OnInit, OnDestroy {
   private readonly pacienteService = inject(PacienteService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly buscaSubject = new Subject<string>();
   private readonly destroy$ = new Subject<void>();
 
@@ -46,17 +59,18 @@ export class PacientesComponent implements OnInit, OnDestroy {
           this.error = null;
           this.pagina = 0;
           return this.pacienteService.listar(this.busca, this.pagina, this.tamanho, this.ativoSelecionado())
-            .pipe(finalize(() => this.loading = false));
+            .pipe(
+              timeout(10_000),
+              catchError((error: unknown) => {
+                this.finalizarComErro(error);
+                return EMPTY;
+              }),
+            );
         }),
         takeUntil(this.destroy$),
       )
       .subscribe({
-        next: (response) => {
-          this.pacientes = response.conteudo;
-          this.total = response.totalElementos;
-          this.pagina = response.pagina;
-        },
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: (response) => this.aplicarPagina(response),
       });
 
     this.carregar();
@@ -73,19 +87,34 @@ export class PacientesComponent implements OnInit, OnDestroy {
     this.pagina = pagina;
 
     this.pacienteService.listar(this.busca, this.pagina, this.tamanho, this.ativoSelecionado())
-      .pipe(finalize(() => this.loading = false))
+      .pipe(
+        timeout(10_000),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
-        next: (response) => {
-          this.pacientes = response.conteudo;
-          this.total = response.totalElementos;
-          this.pagina = response.pagina;
-        },
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: (response) => this.aplicarPagina(response),
+        error: (error) => this.finalizarComErro(error),
       });
   }
 
   buscarEnquantoDigita(): void {
     this.buscaSubject.next(this.busca);
+  }
+
+  private aplicarPagina(response: PaginaResponse<Paciente>): void {
+    this.pacientes = response.conteudo;
+    this.total = response.totalElementos;
+    this.pagina = response.pagina;
+    this.loading = false;
+    this.changeDetectorRef.detectChanges();
+  }
+
+  private finalizarComErro(error: unknown): void {
+    this.error = error instanceof TimeoutError
+      ? 'A consulta de pacientes excedeu 10 segundos. Tente novamente.'
+      : getHttpErrorMessage(error);
+    this.loading = false;
+    this.changeDetectorRef.detectChanges();
   }
 
   abrirNovo(): void {
