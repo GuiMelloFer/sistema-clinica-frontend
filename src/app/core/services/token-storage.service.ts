@@ -6,54 +6,89 @@ const USER_KEY = 'clinica.user';
 
 @Injectable({ providedIn: 'root' })
 export class TokenStorageService {
-  get token(): string | null {
-    if (!this.hasStorage()) {
-      return null;
-    }
+  private memoryLogin: LoginResponse | null = null;
 
-    return sessionStorage.getItem(TOKEN_KEY);
+  get token(): string | null {
+    return this.readSession(TOKEN_KEY) ?? this.memoryLogin?.token ?? null;
   }
 
   get user(): LoginResponse | null {
-    if (!this.hasStorage()) {
-      return null;
+    const raw = this.readSession(USER_KEY);
+    if (!raw) {
+      return this.memoryLogin;
     }
 
-    const raw = sessionStorage.getItem(USER_KEY);
-    if (!raw) {
-      return null;
-    }
     try {
       return JSON.parse(raw) as LoginResponse;
     } catch {
-      this.clear();
-      return null;
+      this.removeSession(USER_KEY);
+      return this.memoryLogin;
     }
   }
 
   save(login: LoginResponse): void {
-    if (!this.hasStorage()) {
-      return;
+    this.memoryLogin = login;
+
+    const storage = this.sessionStorageOrNull();
+    if (storage) {
+      try {
+        storage.setItem(TOKEN_KEY, login.token);
+        storage.setItem(USER_KEY, JSON.stringify(login));
+      } catch {
+        this.removeSession(TOKEN_KEY);
+        this.removeSession(USER_KEY);
+      }
     }
 
-    sessionStorage.setItem(TOKEN_KEY, login.token);
-    sessionStorage.setItem(USER_KEY, JSON.stringify(login));
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    this.removeLocal(TOKEN_KEY);
+    this.removeLocal(USER_KEY);
   }
 
   clear(): void {
-    if (!this.hasStorage()) {
-      return;
-    }
-
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(USER_KEY);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    this.memoryLogin = null;
+    this.removeSession(TOKEN_KEY);
+    this.removeSession(USER_KEY);
+    this.removeLocal(TOKEN_KEY);
+    this.removeLocal(USER_KEY);
   }
 
-  private hasStorage(): boolean {
-    return typeof sessionStorage !== 'undefined';
+  private readSession(key: string): string | null {
+    try {
+      return this.sessionStorageOrNull()?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private removeSession(key: string): void {
+    try {
+      this.sessionStorageOrNull()?.removeItem(key);
+    } catch {
+      // A sessao em memoria continua sendo usada quando o navegador bloqueia o storage.
+    }
+  }
+
+  private removeLocal(key: string): void {
+    try {
+      this.localStorageOrNull()?.removeItem(key);
+    } catch {
+      // A limpeza de dados legados nao deve impedir o login.
+    }
+  }
+
+  private sessionStorageOrNull(): Storage | null {
+    try {
+      return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  private localStorageOrNull(): Storage | null {
+    try {
+      return typeof localStorage === 'undefined' ? null : localStorage;
+    } catch {
+      return null;
+    }
   }
 }
