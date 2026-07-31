@@ -1,7 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { TimeoutError, timeout } from 'rxjs';
 import { Admin, AdminCodigoAcesso, AdminRequest } from '../../../../core/models/admin.model';
 import { AlterarSenhaRequest } from '../../../../core/models/auth.model';
 import { AdminService } from '../../../../core/services/admin.service';
@@ -19,6 +19,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
 export class AdminsComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly authService = inject(AuthService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   readonly tokenStorage = inject(TokenStorageService);
 
   admins: Admin[] = [];
@@ -52,10 +53,18 @@ export class AdminsComponent implements OnInit {
     this.error = null;
 
     this.adminService.listar()
-      .pipe(finalize(() => this.loading = false))
+      .pipe(timeout(10_000))
       .subscribe({
-        next: (admins) => this.admins = admins,
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: (admins) => {
+          this.admins = admins;
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A consulta de administradores');
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -73,14 +82,20 @@ export class AdminsComponent implements OnInit {
       nome: this.novoAdmin.nome.trim(),
       email: this.novoAdmin.email.trim(),
     })
-      .pipe(finalize(() => this.salvandoAdmin = false))
+      .pipe(timeout(15_000))
       .subscribe({
         next: (response) => {
+          this.salvandoAdmin = false;
           this.codigoGerado = response;
           this.novoAdmin = { nome: '', email: '' };
           this.carregar();
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.adminError = getHttpErrorMessage(error),
+        error: (error) => {
+          this.adminError = this.mensagemErro(error, 'A criacao do administrador');
+          this.salvandoAdmin = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -90,13 +105,19 @@ export class AdminsComponent implements OnInit {
     this.codigoGerado = null;
 
     this.adminService.gerarCodigoAcesso(admin.id)
-      .pipe(finalize(() => this.gerandoCodigoId = null))
+      .pipe(timeout(15_000))
       .subscribe({
         next: (response) => {
+          this.gerandoCodigoId = null;
           this.codigoGerado = response;
           this.carregar();
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.error = getHttpErrorMessage(error),
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A geracao do codigo de acesso');
+          this.gerandoCodigoId = null;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -109,10 +130,18 @@ export class AdminsComponent implements OnInit {
     this.error = null;
 
     this.adminService.remover(admin.id)
-      .pipe(finalize(() => this.removendoId = null))
+      .pipe(timeout(15_000))
       .subscribe({
-        next: () => this.carregar(),
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: () => {
+          this.removendoId = null;
+          this.carregar();
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A remocao do administrador');
+          this.removendoId = null;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -132,17 +161,29 @@ export class AdminsComponent implements OnInit {
     this.senhaSuccess = null;
 
     this.authService.alterarSenha(this.senhaForm)
-      .pipe(finalize(() => this.salvandoSenha = false))
+      .pipe(timeout(15_000))
       .subscribe({
         next: () => {
+          this.salvandoSenha = false;
           this.senhaForm = { senhaAtual: '', novaSenha: '' };
           this.senhaSuccess = 'Senha alterada com sucesso.';
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.senhaError = getHttpErrorMessage(error),
+        error: (error) => {
+          this.senhaError = this.mensagemErro(error, 'A alteracao da senha');
+          this.salvandoSenha = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
   adminAtual(admin: Admin): boolean {
     return admin.email === this.tokenStorage.user?.email;
+  }
+
+  private mensagemErro(error: unknown, operacao: string): string {
+    return error instanceof TimeoutError
+      ? `${operacao} excedeu o tempo limite. Tente novamente.`
+      : getHttpErrorMessage(error);
   }
 }

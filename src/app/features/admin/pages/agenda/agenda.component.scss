@@ -104,6 +104,12 @@
   opacity: 0.55;
 }
 
+.calendar-scroll {
+  max-height: calc(100vh - 310px);
+  min-height: 520px;
+  overflow: auto;
+}
+
 .calendar-head {
   position: sticky;
   top: 0;
@@ -121,9 +127,13 @@
 }
 
 .calendar-head__corner {
+  position: sticky;
+  left: 0;
+  z-index: 6;
   display: grid;
   place-items: end center;
   padding: 12px 8px;
+  background: #f8fbfa;
   color: #63746d;
   font-size: 0.74rem;
   font-weight: 800;
@@ -178,15 +188,14 @@
 }
 
 .calendar-body {
-  max-height: calc(100vh - 310px);
-  min-height: 520px;
-  overflow: auto;
   display: grid;
   grid-template-columns: 74px minmax(956px, 1fr);
+  min-width: 1030px;
 }
 
 .calendar-shell.is-day-view .calendar-body {
   grid-template-columns: 74px minmax(420px, 1fr);
+  min-width: 494px;
 }
 
 .calendar-times {
@@ -567,7 +576,7 @@
 }
 
 @media (max-width: 980px) {
-  .calendar-body {
+  .calendar-scroll {
     max-height: calc(100vh - 360px);
   }
 }
@@ -593,7 +602,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .calendar-body {
+  .calendar-scroll {
     min-height: 500px;
   }
 
@@ -609,7 +618,6 @@
     width: 100%;
   }
 }
-
 
 
 

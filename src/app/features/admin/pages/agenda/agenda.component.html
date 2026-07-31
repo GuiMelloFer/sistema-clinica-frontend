@@ -59,120 +59,122 @@
   }
 
   <section class="calendar-shell" [class.is-loading]="loading" [class.is-day-view]="modoVisualizacao === 'dia'" [attr.aria-label]="modoVisualizacao === 'dia' ? 'Agenda do dia' : 'Agenda da semana'">
-    <div class="calendar-head">
-      <div class="calendar-head__corner">Horario</div>
-      @for (dia of diasDaSemana; track dia.data) {
-        <button
-          class="calendar-day-head"
-          type="button"
-          [class.is-today]="dia.hoje"
-          [class.is-selected]="dia.selecionado"
-          (click)="selecionarDia(dia.data)"
-        >
-          <span>{{ dia.rotulo }}</span>
-          <strong>{{ dia.diaMes }}</strong>
-          <small>{{ contagemDia(dia.data) }} ag.</small>
-        </button>
-      }
-    </div>
-
-    <div class="calendar-body">
-      <div class="calendar-times" [style.height.px]="gridAltura()">
-        @for (row of calendarHourRows; track row.hora) {
-          <div class="calendar-time" [style.height.px]="row.height">{{ row.hora.toString().padStart(2, '0') }}:00</div>
+    <div class="calendar-scroll">
+      <div class="calendar-head">
+        <div class="calendar-head__corner">Horario</div>
+        @for (dia of diasDaSemana; track dia.data) {
+          <button
+            class="calendar-day-head"
+            type="button"
+            [class.is-today]="dia.hoje"
+            [class.is-selected]="dia.selecionado"
+            (click)="selecionarDia(dia.data)"
+          >
+            <span>{{ dia.rotulo }}</span>
+            <strong>{{ dia.diaMes }}</strong>
+            <small>{{ contagemDia(dia.data) }} ag.</small>
+          </button>
         }
       </div>
 
-      <div class="calendar-grid" [style.height.px]="gridAltura()">
-        @for (dia of diasDaSemana; track dia.data) {
-          <div class="calendar-day-column" [class.is-selected]="dia.selecionado">
-            @for (row of calendarHourRows; track row.hora) {
-              <button
-                class="calendar-slot"
-                type="button"
-                [style.height.px]="row.height"
-                (dblclick)="abrirNovo(dia.data, row.hora)"
-                aria-label="Novo agendamento"
-              ></button>
-            }
+      <div class="calendar-body">
+        <div class="calendar-times" [style.height.px]="gridAltura()">
+          @for (row of calendarHourRows; track row.hora) {
+            <div class="calendar-time" [style.height.px]="row.height">{{ row.hora.toString().padStart(2, '0') }}:00</div>
+          }
+        </div>
 
-            @if (indicadorAgoraTop(dia.data); as agoraTop) {
-              <div class="calendar-now" [style.top.px]="agoraTop" aria-label="Horario atual"></div>
-            }
-            @for (item of eventosDoDia(dia.data); track item.agendamento.id) {
-              <article
-                class="calendar-event"
-                tabindex="0"
-                [class.is-cancelled]="item.agendamento.status === 'CANCELADO'"
-                [class.is-confirmed]="item.agendamento.status === 'CONFIRMADO'"
-                [class.is-done]="item.agendamento.status === 'COMPARECEU'"
-                [class.is-missed]="item.agendamento.status === 'FALTOU'"
-                [class.is-compact]="item.height <= 44"
-                [style.top.px]="item.top"
-                [style.height.px]="item.height"
-                [style.left.%]="item.left"
-                [style.width.%]="item.width"
-                [style.--event-color]="item.agendamento.profissionalCor || '#2f7668'"
-                (click)="abrirEdicao(item.agendamento)"
-              >
-                <div class="calendar-event__time">
-                  <span>{{ item.agendamento.dataHoraInicio | date:'HH:mm' }} - {{ item.agendamento.dataHoraFim | date:'HH:mm' }}</span>
-                  <small>{{ statusLabel(item.agendamento.status) }}</small>
-                </div>
-                <strong>{{ item.agendamento.pacienteNome }}</strong>
-                <span>{{ tipoLabel(item.agendamento.tipo) }} · {{ item.agendamento.profissionalNome }}</span>
-                <div class="calendar-event__popover" aria-hidden="true">
-                  <div class="event-popover__header">
-                    <span>{{ tipoLabel(item.agendamento.tipo) }}</span>
-                    <strong>{{ statusLabel(item.agendamento.status) }}</strong>
+        <div class="calendar-grid" [style.height.px]="gridAltura()">
+          @for (dia of diasDaSemana; track dia.data) {
+            <div class="calendar-day-column" [class.is-selected]="dia.selecionado">
+              @for (row of calendarHourRows; track row.hora) {
+                <button
+                  class="calendar-slot"
+                  type="button"
+                  [style.height.px]="row.height"
+                  (dblclick)="abrirNovo(dia.data, row.hora)"
+                  aria-label="Novo agendamento"
+                ></button>
+              }
+
+              @if (indicadorAgoraTop(dia.data); as agoraTop) {
+                <div class="calendar-now" [style.top.px]="agoraTop" aria-label="Horario atual"></div>
+              }
+              @for (item of eventosDoDia(dia.data); track item.agendamento.id) {
+                <article
+                  class="calendar-event"
+                  tabindex="0"
+                  [class.is-cancelled]="item.agendamento.status === 'CANCELADO'"
+                  [class.is-confirmed]="item.agendamento.status === 'CONFIRMADO'"
+                  [class.is-done]="item.agendamento.status === 'COMPARECEU'"
+                  [class.is-missed]="item.agendamento.status === 'FALTOU'"
+                  [class.is-compact]="item.height <= 44"
+                  [style.top.px]="item.top"
+                  [style.height.px]="item.height"
+                  [style.left.%]="item.left"
+                  [style.width.%]="item.width"
+                  [style.--event-color]="item.agendamento.profissionalCor || '#2f7668'"
+                  (click)="abrirEdicao(item.agendamento)"
+                >
+                  <div class="calendar-event__time">
+                    <span>{{ item.agendamento.dataHoraInicio | date:'HH:mm' }} - {{ item.agendamento.dataHoraFim | date:'HH:mm' }}</span>
+                    <small>{{ statusLabel(item.agendamento.status) }}</small>
                   </div>
-                  <div class="event-popover__title">{{ item.agendamento.pacienteNome }}</div>
-                  <dl>
-                    <div>
-                      <dt>Paciente</dt>
-                      <dd>#{{ item.agendamento.pacienteId }} · {{ item.agendamento.pacienteNome }}</dd>
+                  <strong>{{ item.agendamento.pacienteNome }}</strong>
+                  <span>{{ tipoLabel(item.agendamento.tipo) }} · {{ item.agendamento.profissionalNome }}</span>
+                  <div class="calendar-event__popover" aria-hidden="true">
+                    <div class="event-popover__header">
+                      <span>{{ tipoLabel(item.agendamento.tipo) }}</span>
+                      <strong>{{ statusLabel(item.agendamento.status) }}</strong>
                     </div>
-                    <div>
-                      <dt>Horário</dt>
-                      <dd>
-                        {{ item.agendamento.dataHoraInicio | date:'dd/MM/yyyy HH:mm' }}
-                        -
-                        {{ item.agendamento.dataHoraFim | date:'HH:mm' }}
-                        ({{ duracaoAgendamentoLabel(item.agendamento) }})
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Profissional</dt>
-                      <dd>{{ item.agendamento.profissionalNome }}</dd>
-                    </div>
-                    <div>
-                      <dt>Unidade</dt>
-                      <dd>{{ item.agendamento.unidadeNome }}</dd>
-                    </div>
-                    @if (item.agendamento.titulo) {
+                    <div class="event-popover__title">{{ item.agendamento.pacienteNome }}</div>
+                    <dl>
                       <div>
-                        <dt>Título</dt>
-                        <dd>{{ item.agendamento.titulo }}</dd>
+                        <dt>Paciente</dt>
+                        <dd>#{{ item.agendamento.pacienteId }} · {{ item.agendamento.pacienteNome }}</dd>
                       </div>
-                    }
-                    @if (item.agendamento.observacao) {
                       <div>
-                        <dt>Observação</dt>
-                        <dd>{{ item.agendamento.observacao }}</dd>
+                        <dt>Horário</dt>
+                        <dd>
+                          {{ item.agendamento.dataHoraInicio | date:'dd/MM/yyyy HH:mm' }}
+                          -
+                          {{ item.agendamento.dataHoraFim | date:'HH:mm' }}
+                          ({{ duracaoAgendamentoLabel(item.agendamento) }})
+                        </dd>
                       </div>
-                    }
-                    @if (item.agendamento.avisos.length) {
                       <div>
-                        <dt>Avisos</dt>
-                        <dd>{{ item.agendamento.avisos.join(' · ') }}</dd>
+                        <dt>Profissional</dt>
+                        <dd>{{ item.agendamento.profissionalNome }}</dd>
                       </div>
-                    }
-                  </dl>
-                </div>
-              </article>
-            }
-          </div>
-        }
+                      <div>
+                        <dt>Unidade</dt>
+                        <dd>{{ item.agendamento.unidadeNome }}</dd>
+                      </div>
+                      @if (item.agendamento.titulo) {
+                        <div>
+                          <dt>Título</dt>
+                          <dd>{{ item.agendamento.titulo }}</dd>
+                        </div>
+                      }
+                      @if (item.agendamento.observacao) {
+                        <div>
+                          <dt>Observação</dt>
+                          <dd>{{ item.agendamento.observacao }}</dd>
+                        </div>
+                      }
+                      @if (item.agendamento.avisos.length) {
+                        <div>
+                          <dt>Avisos</dt>
+                          <dd>{{ item.agendamento.avisos.join(' · ') }}</dd>
+                        </div>
+                      }
+                    </dl>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
       </div>
     </div>
 
@@ -330,8 +332,6 @@
     </section>
   </div>
 }
-
-
 
 
 

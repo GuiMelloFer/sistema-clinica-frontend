@@ -1,6 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { TimeoutError, timeout } from 'rxjs';
 import { Unidade, UnidadeRequest } from '../../../../core/models/unidade.model';
 import { UnidadeService } from '../../../../core/services/unidade.service';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
@@ -14,6 +14,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
 })
 export class UnidadesComponent implements OnInit {
   private readonly unidadeService = inject(UnidadeService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   busca = '';
   filtroStatus: 'ativos' | 'inativos' | 'todos' = 'ativos';
@@ -40,14 +41,20 @@ export class UnidadesComponent implements OnInit {
     this.pagina = pagina;
 
     this.unidadeService.listar(this.busca, this.pagina, this.tamanho, this.ativoSelecionado())
-      .pipe(finalize(() => this.loading = false))
+      .pipe(timeout(10_000))
       .subscribe({
         next: (response) => {
           this.unidades = response.conteudo;
           this.total = response.totalElementos;
           this.pagina = response.pagina;
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.error = getHttpErrorMessage(error),
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A consulta de unidades');
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -93,13 +100,19 @@ export class UnidadesComponent implements OnInit {
       : this.unidadeService.criar(request);
 
     operacao
-      .pipe(finalize(() => this.salvando = false))
+      .pipe(timeout(15_000))
       .subscribe({
         next: () => {
+          this.salvando = false;
           this.modalAberto = false;
           this.carregar(this.unidadeEmEdicao ? this.pagina : 0);
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.formError = getHttpErrorMessage(error),
+        error: (error) => {
+          this.formError = this.mensagemErro(error, 'O salvamento da unidade');
+          this.salvando = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -112,10 +125,18 @@ export class UnidadesComponent implements OnInit {
     this.error = null;
 
     this.unidadeService.desativar(unidade.id)
-      .pipe(finalize(() => this.desativandoId = null))
+      .pipe(timeout(15_000))
       .subscribe({
-        next: () => this.carregar(this.pagina),
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: () => {
+          this.desativandoId = null;
+          this.carregar(this.pagina);
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A desativacao da unidade');
+          this.desativandoId = null;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -150,5 +171,11 @@ export class UnidadesComponent implements OnInit {
   private limparTexto(valor: string | null | undefined): string | null {
     const texto = valor?.trim();
     return texto ? texto : null;
+  }
+
+  private mensagemErro(error: unknown, operacao: string): string {
+    return error instanceof TimeoutError
+      ? `${operacao} excedeu o tempo limite. Tente novamente.`
+      : getHttpErrorMessage(error);
   }
 }

@@ -1,8 +1,19 @@
 ﻿import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } from 'rxjs';
+import {
+  EMPTY,
+  Subject,
+  TimeoutError,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  forkJoin,
+  switchMap,
+  takeUntil,
+  timeout,
+} from 'rxjs';
 import {
   Agendamento,
   AgendamentoRequest,
@@ -57,6 +68,7 @@ export class AgendaComponent implements OnInit, OnDestroy {
   private readonly pacienteService = inject(PacienteService);
   private readonly profissionalService = inject(ProfissionalService);
   private readonly unidadeService = inject(UnidadeService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly pacienteBuscaSubject = new Subject<string>();
   private readonly destroy$ = new Subject<void>();
   private readonly calendarRowHeight = 92;
@@ -116,16 +128,28 @@ export class AgendaComponent implements OnInit, OnDestroy {
       .pipe(
         debounceTime(250),
         distinctUntilChanged(),
-        switchMap(() => {
+        switchMap((busca) => {
           this.buscandoPacientes = true;
-          return this.pacienteService.listar(this.pacienteBusca, 0, 30, true)
-            .pipe(finalize(() => this.buscandoPacientes = false));
+          this.changeDetectorRef.detectChanges();
+          return this.pacienteService.listar(busca, 0, 30, true)
+            .pipe(
+              timeout(10_000),
+              catchError((error: unknown) => {
+                this.buscandoPacientes = false;
+                this.error = this.mensagemErro(error, 'A busca de pacientes');
+                this.changeDetectorRef.detectChanges();
+                return EMPTY;
+              }),
+            );
         }),
         takeUntil(this.destroy$),
       )
       .subscribe({
-        next: (response) => this.pacientes = response.conteudo,
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: (response) => {
+          this.pacientes = response.conteudo;
+          this.buscandoPacientes = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
 
     this.iniciarIndicadorAgora();
@@ -145,27 +169,49 @@ export class AgendaComponent implements OnInit, OnDestroy {
   carregarBase(): void {
     this.loadingBase = true;
 
-    this.profissionalService.listar('', 0, 200, true).subscribe({
-      next: (response) => this.profissionais = response.conteudo,
-      error: (error) => this.error = getHttpErrorMessage(error),
-    });
-
-    this.unidadeService.listar('', 0, 200, true).subscribe({
-      next: (response) => this.unidades = response.conteudo,
-      error: (error) => this.error = getHttpErrorMessage(error),
-    });
+    forkJoin({
+      profissionais: this.profissionalService.listar('', 0, 200, true),
+      unidades: this.unidadeService.listar('', 0, 200, true),
+    })
+      .pipe(
+        timeout(10_000),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: ({ profissionais, unidades }) => {
+          this.profissionais = profissionais.conteudo;
+          this.unidades = unidades.conteudo;
+          this.loadingBase = false;
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'O carregamento dos dados da agenda');
+          this.loadingBase = false;
+          this.changeDetectorRef.detectChanges();
+        },
+      });
 
     this.buscarPacientes();
-    this.loadingBase = false;
   }
 
   buscarPacientes(): void {
     this.buscandoPacientes = true;
     this.pacienteService.listar(this.pacienteBusca, 0, 30, true)
-      .pipe(finalize(() => this.buscandoPacientes = false))
+      .pipe(
+        timeout(10_000),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
-        next: (response) => this.pacientes = response.conteudo,
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: (response) => {
+          this.pacientes = response.conteudo;
+          this.buscandoPacientes = false;
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A busca de pacientes');
+          this.buscandoPacientes = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -212,13 +258,22 @@ export class AgendaComponent implements OnInit, OnDestroy {
         tipo: this.filtroTipo || null,
       },
     )
-      .pipe(finalize(() => this.loading = false))
+      .pipe(
+        timeout(10_000),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
         next: (response) => {
           this.agendamentos = response.sort((a, b) => a.dataHoraInicio.localeCompare(b.dataHoraInicio));
           this.atualizarEstruturaSemana();
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.error = getHttpErrorMessage(error),
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A consulta da agenda');
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -331,14 +386,23 @@ export class AgendaComponent implements OnInit, OnDestroy {
       : this.agendamentoService.criar(request);
 
     operacao
-      .pipe(finalize(() => this.salvando = false))
+      .pipe(
+        timeout(15_000),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
         next: () => {
+          this.salvando = false;
           this.modalAberto = false;
           this.data = request.dataHoraInicio.slice(0, 10);
           this.carregarAgenda();
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.tratarErroSalvar(error),
+        error: (error) => {
+          this.salvando = false;
+          this.tratarErroSalvar(error);
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -351,10 +415,21 @@ export class AgendaComponent implements OnInit, OnDestroy {
     this.error = null;
 
     this.agendamentoService.cancelar(agendamento.id)
-      .pipe(finalize(() => this.cancelandoId = null))
+      .pipe(
+        timeout(15_000),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
-        next: () => this.carregarAgenda(),
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: () => {
+          this.cancelandoId = null;
+          this.carregarAgenda();
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'O cancelamento do agendamento');
+          this.cancelandoId = null;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -637,7 +712,13 @@ export class AgendaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.formError = getHttpErrorMessage(error);
+    this.formError = this.mensagemErro(error, 'O salvamento do agendamento');
+  }
+
+  private mensagemErro(error: unknown, operacao: string): string {
+    return error instanceof TimeoutError
+      ? `${operacao} excedeu o tempo limite. Tente novamente.`
+      : getHttpErrorMessage(error);
   }
 
   private validarFormulario(): string | null {
@@ -843,7 +924,6 @@ export class AgendaComponent implements OnInit, OnDestroy {
     return texto ? texto : null;
   }
 }
-
 
 
 

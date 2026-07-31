@@ -1,6 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { TimeoutError, timeout } from 'rxjs';
 import { Profissional, ProfissionalRequest, TipoProfissional } from '../../../../core/models/profissional.model';
 import { ProfissionalService } from '../../../../core/services/profissional.service';
 import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
@@ -14,6 +14,7 @@ import { getHttpErrorMessage } from '../../../../core/utils/http-error.util';
 })
 export class ProfissionaisComponent implements OnInit {
   private readonly profissionalService = inject(ProfissionalService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   readonly tipos: Array<{ value: TipoProfissional; label: string }> = [
     { value: 'MEDICO', label: 'Medico' },
@@ -53,14 +54,20 @@ export class ProfissionaisComponent implements OnInit {
       this.ativoSelecionado(),
       this.tipoSelecionado(),
     )
-      .pipe(finalize(() => this.loading = false))
+      .pipe(timeout(10_000))
       .subscribe({
         next: (response) => {
           this.profissionais = response.conteudo;
           this.total = response.totalElementos;
           this.pagina = response.pagina;
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.error = getHttpErrorMessage(error),
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A consulta de profissionais');
+          this.loading = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -107,13 +114,19 @@ export class ProfissionaisComponent implements OnInit {
       : this.profissionalService.criar(request);
 
     operacao
-      .pipe(finalize(() => this.salvando = false))
+      .pipe(timeout(15_000))
       .subscribe({
         next: () => {
+          this.salvando = false;
           this.modalAberto = false;
           this.carregar(this.profissionalEmEdicao ? this.pagina : 0);
+          this.changeDetectorRef.detectChanges();
         },
-        error: (error) => this.formError = getHttpErrorMessage(error),
+        error: (error) => {
+          this.formError = this.mensagemErro(error, 'O salvamento do profissional');
+          this.salvando = false;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -126,10 +139,18 @@ export class ProfissionaisComponent implements OnInit {
     this.error = null;
 
     this.profissionalService.desativar(profissional.id)
-      .pipe(finalize(() => this.desativandoId = null))
+      .pipe(timeout(15_000))
       .subscribe({
-        next: () => this.carregar(this.pagina),
-        error: (error) => this.error = getHttpErrorMessage(error),
+        next: () => {
+          this.desativandoId = null;
+          this.carregar(this.pagina);
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.error = this.mensagemErro(error, 'A desativacao do profissional');
+          this.desativandoId = null;
+          this.changeDetectorRef.detectChanges();
+        },
       });
   }
 
@@ -174,5 +195,11 @@ export class ProfissionaisComponent implements OnInit {
   private limparTexto(valor: string | null | undefined): string | null {
     const texto = valor?.trim();
     return texto ? texto : null;
+  }
+
+  private mensagemErro(error: unknown, operacao: string): string {
+    return error instanceof TimeoutError
+      ? `${operacao} excedeu o tempo limite. Tente novamente.`
+      : getHttpErrorMessage(error);
   }
 }
